@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Get Meal Suggestions', ~{::section})}">
+<section>
+    <h1>Get Meal Suggestions</h1>
+
+    <div class="card">
+        <h2>Your Ingredients</h2>
+        <ul>
+            <li th:each="ingredient : ${ingredients}" th:text="${ingredient.displayName}"></li>
+        </ul>
+        <a th:href="@{/ingredients}">Edit Ingredients</a>
+    </div>
+
+    <div class="card">
+        <form th:action="@{/meal-request/suggest}" method="post" th:object="${mealRequest}">
+            <label for="dietaryPreferences">Dietary preferences (optional)</label>
+            <textarea id="dietaryPreferences" th:field="*{dietaryPreferences}" th:attr="maxlength=${charLimit}"></textarea>
+            <div class="flash-error" th:if="${#fields.hasErrors('dietaryPreferences')}" th:errors="*{dietaryPreferences}"></div>
+            <button type="submit">Get Meal Suggestions</button>
+        </form>
+    </div>
+</section>
+</html>
+

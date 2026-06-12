@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('My Ingredients', ~{::section})}">
+<section>
+    <h1>My Ingredients</h1>
+
+    <div th:if="${successMessage}" class="flash-success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="flash-error" th:text="${errorMessage}"></div>
+
+    <div class="card">
+        <p><strong th:text="${#lists.size(ingredients)} + ' / 50'"></strong></p>
+        <form th:action="@{/ingredients/add}" method="post" th:object="${addForm}">
+            <input type="text" th:field="*{name}" placeholder="e.g. Chicken breast"/>
+            <button type="submit" th:disabled="${isFull}">Add Ingredient</button>
+        </form>
+        <p th:if="${#lists.isEmpty(ingredients)}">Add ingredients from your fridge or pantry to get started.</p>
+
+        <div th:each="ingredient : ${ingredients}" class="list-row">
+            <span th:text="${ingredient.displayName}"></span>
+            <form th:action="@{/ingredients/remove}" method="post">
+                <input type="hidden" name="normalizedKey" th:value="${ingredient.normalizedKey}"/>
+                <button type="submit">Remove</button>
+            </form>
+        </div>
+    </div>
+</section>
+</html>
+

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="page(title, content)">
+    <html>
+    <head>
+        <meta charset="UTF-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title th:text="${title} + ' — Cusina AI'">Cusina AI</title>
+        <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    </head>
+    <body>
+    <header class="top-nav">
+        <a th:href="@{/ingredients}">My Ingredients</a>
+        <a th:href="@{/meal-request}">Get Suggestions</a>
+    </header>
+    <main class="container" th:replace="${content}"></main>
+    <footer class="footer">Cusina AI</footer>
+    </body>
+    </html>
+</th:block>
+</body>
+</html>
+
