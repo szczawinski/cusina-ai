@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Configuration;
 public class AnthropicConfig {
 
     @Bean
-    @ConditionalOnProperty(prefix = "ai", name = "provider", havingValue = "anthropic")
+    @ConditionalOnProperty(prefix = "ai", name = "provider", havingValue = "anthropic", matchIfMissing = true)
     public AnthropicClient anthropicClient(AnthropicProperties properties) {
         return AnthropicOkHttpClient.builder()
                 .apiKey(properties.getApiKey())
@@ -24,13 +24,13 @@ public class AnthropicConfig {
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "ai", name = "provider", havingValue = "anthropic")
+    @ConditionalOnProperty(prefix = "ai", name = "provider", havingValue = "anthropic", matchIfMissing = true)
     public MealAiClient anthropicMealAiClient(AnthropicClient anthropicClient, AnthropicProperties properties) {
         return new AnthropicMealAiClient(anthropicClient, properties);
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "ai", name = "provider", havingValue = "ollama", matchIfMissing = true)
+    @ConditionalOnProperty(prefix = "ai", name = "provider", havingValue = "ollama")
     public MealAiClient ollamaMealAiClient(OllamaProperties properties, ObjectMapper objectMapper) {
         return new OllamaMealAiClient(properties, objectMapper);
     }

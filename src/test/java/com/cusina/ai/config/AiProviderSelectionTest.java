@@ -17,26 +17,29 @@ class AiProviderSelectionTest {
             .withBean(ObjectMapper.class, ObjectMapper::new);
 
     @Test
-    void shouldUseOllamaClientByDefault() {
-        contextRunner.run(context -> {
+    void shouldUseAnthropicClientByDefault() {
+        contextRunner
+                .withPropertyValues("anthropic.api-key=test-key")
+                .run(context -> {
             assertThat(context).hasSingleBean(MealAiClient.class);
-            assertThat(context.getBean(MealAiClient.class)).isInstanceOf(OllamaMealAiClient.class);
-            assertThat(context).doesNotHaveBean(AnthropicClient.class);
+            assertThat(context.getBean(MealAiClient.class)).isInstanceOf(AnthropicMealAiClient.class);
+            assertThat(context).hasSingleBean(AnthropicClient.class);
         });
     }
 
     @Test
-    void shouldUseAnthropicClientWhenProviderIsAnthropic() {
+    void shouldUseOllamaClientWhenProviderIsExplicitlySet() {
         contextRunner
                 .withPropertyValues(
-                        "ai.provider=anthropic",
-                        "anthropic.api-key=test-key"
+                        "ai.provider=ollama"
                 )
                 .run(context -> {
                     assertThat(context).hasSingleBean(MealAiClient.class);
-                    assertThat(context.getBean(MealAiClient.class)).isInstanceOf(AnthropicMealAiClient.class);
-                    assertThat(context).hasSingleBean(AnthropicClient.class);
+                    assertThat(context.getBean(MealAiClient.class)).isInstanceOf(OllamaMealAiClient.class);
+                    assertThat(context).doesNotHaveBean(AnthropicClient.class);
                 });
     }
 }
+
+
 

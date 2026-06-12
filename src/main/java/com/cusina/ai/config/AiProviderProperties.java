@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "ai")
 public class AiProviderProperties {
 
-    private String provider = "ollama";
+    private String provider = "anthropic";
 
     public String getProvider() {
         return provider;
@@ -15,4 +15,5 @@ public class AiProviderProperties {
         this.provider = provider;
     }
 }
+
 
