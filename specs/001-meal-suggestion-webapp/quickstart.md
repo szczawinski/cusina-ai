@@ -49,14 +49,43 @@ mvn spring-boot:run
 ```
 
 ```bash
-# PowerShell: lokalnie z Firestore
+# PowerShell: lokalnie z Firestore (mvn spring-boot:run)
 $env:ANTHROPIC_API_KEY="<key>"
 $env:FIRESTORE_ENABLED="true"
+$env:GOOGLE_CLOUD_PROJECT="cusina-ai"
 $env:GOOGLE_APPLICATION_CREDENTIALS="C:\\path\\to\\service-account.json"
 mvn spring-boot:run
 ```
 
+```bash
+# PowerShell: lokalnie z Firestore (java -jar)
+$env:ANTHROPIC_API_KEY="<key>"
+$env:FIRESTORE_ENABLED="true"
+$env:GOOGLE_CLOUD_PROJECT="cusina-ai"
+$env:GOOGLE_APPLICATION_CREDENTIALS="C:\\path\\to\\service-account.json"
+java -jar target/cusina-ai-0.0.1-SNAPSHOT.jar
+```
+
+```bash
+# Docker lokalnie z Firestore (Windows PowerShell)
+# 1) zbuduj obraz
+cd C:\Users\e-prcw\workspace\cusina-ai
+docker build -t cusina-ai:local .
+
+# 2) uruchom z montowaniem klucza service account
+$env:GOOGLE_CREDENTIALS_HOST="C:\\path\\to\\service-account.json"
+docker run --rm -p 8080:8080 \
+  -e ANTHROPIC_API_KEY="<key>" \
+  -e FIRESTORE_ENABLED="true" \
+  -e GOOGLE_CLOUD_PROJECT="cusina-ai" \
+  -e GOOGLE_APPLICATION_CREDENTIALS="/secrets/gcp-sa.json" \
+  -v "$env:GOOGLE_CREDENTIALS_HOST:/secrets/gcp-sa.json:ro" \
+  cusina-ai:local
+```
+
 Aplikacja: `http://localhost:8080/ingredients`
+
+> Uwaga kosztowa: Firestore ma darmowy tier. Przy tej aplikacji (niskie R/W) zwykle wystarcza, ale warto ustawić alert budżetowy w GCP.
 
 ---
 
@@ -127,4 +156,3 @@ Manualnie potwierdzić:
 - `mvn -B test` ✅
 - 45 testów: `0 failures`, `0 errors`, `0 skipped`
 - Pokryte automatycznie: preload 10 składników, walidacja comboboxów, wpływ `dishType`/`dietType` na prompt AI, akceptacja niepustego podzbioru składników, polityka exact-3 + malformed.
-
