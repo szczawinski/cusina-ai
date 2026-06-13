@@ -47,7 +47,7 @@ public class IngredientFirestoreRepository implements IngredientSessionRepositor
             }
 
             Boolean initialized = snapshot.getBoolean("initialized");
-            List<String> names = sanitizeNames(snapshot.get("ingredientNames", List.class));
+            List<String> names = sanitizeNames(snapshot.get("ingredientNames"));
             return Optional.of(new PersistedIngredientSession(Boolean.TRUE.equals(initialized), names));
         } catch (Exception ex) {
             throw new IllegalStateException("Firestore read failed", ex);
@@ -135,8 +135,8 @@ public class IngredientFirestoreRepository implements IngredientSessionRepositor
         return value != null && !value.isBlank();
     }
 
-    private List<String> sanitizeNames(List<?> names) {
-        if (names == null) {
+    private List<String> sanitizeNames(Object namesValue) {
+        if (!(namesValue instanceof List<?> names)) {
             return List.of();
         }
         return names.stream()
@@ -147,4 +147,3 @@ public class IngredientFirestoreRepository implements IngredientSessionRepositor
                 .toList();
     }
 }
-
