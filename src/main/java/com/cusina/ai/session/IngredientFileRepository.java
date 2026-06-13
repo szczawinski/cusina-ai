@@ -11,11 +11,14 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 @Component
-public class IngredientFileRepository {
+public class IngredientFileRepository implements IngredientSessionRepository {
 
     private static final Logger log = LoggerFactory.getLogger(IngredientFileRepository.class);
 
@@ -33,38 +36,69 @@ public class IngredientFileRepository {
         this.filePath = filePath;
     }
 
-    public synchronized List<String> loadIngredientNames() {
-        if (!Files.exists(filePath)) {
-            return List.of();
+    @Override
+    public synchronized Optional<PersistedIngredientSession> load(String sessionKey) {
+        if (sessionKey == null || sessionKey.isBlank()) {
+            return Optional.empty();
         }
 
-        try {
-            List<String> names = objectMapper.readValue(filePath.toFile(), new TypeReference<>() {
-            });
-            if (names == null) {
-                return List.of();
-            }
-            return names.stream()
-                    .filter(Objects::nonNull)
-                    .map(String::trim)
-                    .filter(name -> !name.isBlank())
-                    .toList();
-        } catch (IOException ex) {
-            log.warn("Could not read ingredients from {}. Starting with an empty list.", filePath, ex);
-            return List.of();
+        Map<String, PersistedIngredientSession> states = readAllStates();
+        PersistedIngredientSession state = states.get(sessionKey);
+        if (state == null) {
+            return Optional.empty();
         }
+
+        List<String> names = sanitizeNames(state.ingredientNames());
+        return Optional.of(new PersistedIngredientSession(state.initialized(), names));
     }
 
-    public synchronized void saveIngredientNames(List<String> ingredientNames) {
+    @Override
+    public synchronized void save(String sessionKey, PersistedIngredientSession state) {
+        if (sessionKey == null || sessionKey.isBlank() || state == null) {
+            return;
+        }
+
         try {
             Path parent = filePath.getParent();
             if (parent != null) {
                 Files.createDirectories(parent);
             }
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(filePath.toFile(), ingredientNames);
+
+            Map<String, PersistedIngredientSession> states = readAllStates();
+            states.put(sessionKey, new PersistedIngredientSession(state.initialized(), sanitizeNames(state.ingredientNames())));
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(filePath.toFile(), states);
         } catch (IOException ex) {
             log.warn("Could not save ingredients to {}.", filePath, ex);
         }
+    }
+
+    private Map<String, PersistedIngredientSession> readAllStates() {
+        if (!Files.exists(filePath)) {
+            return new LinkedHashMap<>();
+        }
+
+        try {
+            Map<String, PersistedIngredientSession> states = objectMapper.readValue(filePath.toFile(), new TypeReference<>() {
+            });
+            if (states == null) {
+                return new LinkedHashMap<>();
+            }
+            return new LinkedHashMap<>(states);
+        } catch (IOException ex) {
+            log.warn("Could not read ingredients map from {}. Starting with an empty map.", filePath, ex);
+            return new LinkedHashMap<>();
+        }
+    }
+
+    private List<String> sanitizeNames(List<String> names) {
+        if (names == null) {
+            return List.of();
+        }
+        return names.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(name -> !name.isBlank())
+                .toList();
     }
 }
 

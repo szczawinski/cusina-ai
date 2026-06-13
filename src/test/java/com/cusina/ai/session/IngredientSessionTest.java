@@ -5,15 +5,19 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class IngredientSessionTest {
 
     private IngredientSession createSessionWithPreload(List<String> preload) {
         IngredientPool pool = mock(IngredientPool.class);
+        IngredientPersistenceService persistenceService = mock(IngredientPersistenceService.class);
+        when(persistenceService.load(any())).thenReturn(java.util.Optional.empty());
         when(pool.drawUnique(10)).thenReturn(preload);
-        return new IngredientSession(pool);
+        return new IngredientSession(pool, persistenceService, "session:test");
     }
 
     @Test
@@ -67,6 +71,20 @@ class IngredientSessionTest {
         session.initializeIfNeeded();
 
         assertThat(session.size()).isEqualTo(10);
+    }
+
+    @Test
+    void shouldLoadStateFromPersistenceBeforeApplyingBusinessRules() {
+        IngredientPool pool = mock(IngredientPool.class);
+        IngredientPersistenceService persistenceService = mock(IngredientPersistenceService.class);
+        when(persistenceService.load("session:test")).thenReturn(java.util.Optional.of(
+                new PersistedIngredientSession(true, List.of("Pomidor", "Cebula"))
+        ));
+
+        IngredientSession session = new IngredientSession(pool, persistenceService, "session:test");
+
+        assertThat(session.getIngredientNames()).containsExactly("Pomidor", "Cebula");
+        verify(persistenceService).load("session:test");
     }
 }
 

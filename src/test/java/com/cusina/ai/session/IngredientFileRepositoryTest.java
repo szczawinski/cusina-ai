@@ -18,17 +18,20 @@ class IngredientFileRepositoryTest {
     void shouldReturnEmptyListWhenFileIsMissing() {
         IngredientFileRepository repository = new IngredientFileRepository(new ObjectMapper(), tempDir.resolve("missing.json"));
 
-        assertThat(repository.loadIngredientNames()).isEmpty();
+        assertThat(repository.load("session:a")).isEmpty();
     }
 
     @Test
-    void shouldSaveAndLoadIngredientNames() {
+    void shouldSaveAndLoadIngredientNamesPerSession() {
         Path file = tempDir.resolve("ingredients.json");
         IngredientFileRepository repository = new IngredientFileRepository(new ObjectMapper(), file);
 
-        repository.saveIngredientNames(List.of("Chicken", " Garlic ", ""));
+        repository.save("session:a", new PersistedIngredientSession(true, List.of("Chicken", " Garlic ", "")));
+        repository.save("session:b", new PersistedIngredientSession(true, List.of("Eggs")));
 
-        assertThat(repository.loadIngredientNames()).containsExactly("Chicken", "Garlic");
+        assertThat(repository.load("session:a")).isPresent();
+        assertThat(repository.load("session:a").orElseThrow().ingredientNames()).containsExactly("Chicken", "Garlic");
+        assertThat(repository.load("session:b").orElseThrow().ingredientNames()).containsExactly("Eggs");
     }
 }
 

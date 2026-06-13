@@ -23,6 +23,17 @@ Powiązane artefakty: [data-model.md](./data-model.md), [contracts/http-routes.m
 - Maven 3.8+
 - Ustawione `ANTHROPIC_API_KEY`
 
+### Konfiguracja persystencji składników (Firestore + fallback lokalny)
+
+- Domyślnie lokalnie używany jest fallback plikowy (`ingredients.persistence.file=data/ingredients.json`).
+- Firestore włączysz przez `FIRESTORE_ENABLED=true`.
+- Credentials są wykrywane automatycznie przez ADC:
+  1. `GOOGLE_APPLICATION_CREDENTIALS` (lokalny plik service account),
+  2. metadata service na Cloud Run (bez pliku klucza).
+- Opcjonalnie ustaw:
+  - `GOOGLE_CLOUD_PROJECT`,
+  - `FIRESTORE_COLLECTION` (domyślnie `ingredientSessions`).
+
 ---
 
 ## Run locally
@@ -34,6 +45,14 @@ mvn clean test
 ```bash
 # PowerShell
 $env:ANTHROPIC_API_KEY="<key>"
+mvn spring-boot:run
+```
+
+```bash
+# PowerShell: lokalnie z Firestore
+$env:ANTHROPIC_API_KEY="<key>"
+$env:FIRESTORE_ENABLED="true"
+$env:GOOGLE_APPLICATION_CREDENTIALS="C:\\path\\to\\service-account.json"
 mvn spring-boot:run
 ```
 

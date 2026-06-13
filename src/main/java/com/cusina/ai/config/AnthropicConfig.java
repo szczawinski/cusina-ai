@@ -14,7 +14,12 @@ import org.springframework.context.annotation.Configuration;
 import java.time.Duration;
 
 @Configuration
-@EnableConfigurationProperties({AnthropicProperties.class, AiProviderProperties.class, OllamaProperties.class})
+@EnableConfigurationProperties({
+        AnthropicProperties.class,
+        AiProviderProperties.class,
+        OllamaProperties.class,
+        FirestorePersistenceProperties.class
+})
 public class AnthropicConfig {
 
     @Bean
