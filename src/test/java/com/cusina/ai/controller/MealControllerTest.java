@@ -86,45 +86,45 @@ class MealControllerTest {
                 .andExpect(model().attributeHasFieldErrors("mealRequest", "dietaryPreferences"));
     }
 
-    @Test
-    void shouldRedirectToResultsOnSuccessfulSubmit() throws Exception {
-        MealSuggestion meal = new MealSuggestion();
-        meal.setName("Omelette");
-        meal.setDescription("desc");
-        meal.setSteps(List.of("step"));
-        meal.setUsedIngredients(List.of("Eggs"));
-        MealResponse response = new MealResponse();
-        response.setRawCount(3);
-        response.setMeals(List.of(meal));
+     @Test
+     void shouldRedirectToResultsOnSuccessfulSubmit() throws Exception {
+         MealSuggestion meal = new MealSuggestion();
+         meal.setName("Omelette");
+         meal.setDescription("desc");
+         meal.setSteps(List.of("step"));
+         meal.setUsedIngredients(List.of("Eggs"));
+         MealResponse response = new MealResponse();
+         response.setRawCount(3);
+         response.setMeals(List.of(meal));
 
-        when(ingredientSession.isEmpty()).thenReturn(false);
-        when(ingredientSession.getIngredientNames()).thenReturn(List.of("Eggs"));
-        when(mealSuggestionService.suggest(any())).thenReturn(CompletableFuture.completedFuture(response));
+         when(ingredientSession.isEmpty()).thenReturn(false);
+         when(ingredientSession.getIngredientNames()).thenReturn(List.of("Eggs"));
+         when(mealSuggestionService.suggest(any())).thenReturn(CompletableFuture.completedFuture(response));
 
-        mockMvc.perform(post("/meal-request/suggest")
-                        .param("dietaryPreferences", "wegetariańskie")
-                        .param("dishType", "obiad")
-                        .param("dietType", "wegetariańska"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/results"))
-                .andExpect(flash().attributeExists("mealResponse"));
-    }
+         mockMvc.perform(post("/meal-request/suggest")
+                         .param("dietaryPreferences", "wegetariańskie")
+                         .param("dishType", "zupy")
+                         .param("dietType", "wegetariańskie"))
+                 .andExpect(status().is3xxRedirection())
+                 .andExpect(redirectedUrl("/results"))
+                 .andExpect(flash().attributeExists("mealResponse"));
+     }
 
-    @Test
-    void shouldRejectTamperedComboboxValueWithoutAiCall() throws Exception {
-        when(ingredientSession.isEmpty()).thenReturn(false);
-        when(ingredientSession.getIngredients()).thenReturn(List.of(new Ingredient("Eggs")));
+     @Test
+     void shouldRejectTamperedComboboxValueWithoutAiCall() throws Exception {
+         when(ingredientSession.isEmpty()).thenReturn(false);
+         when(ingredientSession.getIngredients()).thenReturn(List.of(new Ingredient("Eggs")));
 
-        mockMvc.perform(post("/meal-request/suggest")
-                        .param("dietaryPreferences", "")
-                        .param("dishType", "kolacja")
-                        .param("dietType", "lekka"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("meal-request"))
-                .andExpect(model().attributeHasFieldErrors("mealRequest", "dishType"));
+         mockMvc.perform(post("/meal-request/suggest")
+                         .param("dietaryPreferences", "")
+                         .param("dishType", "invalid-value")
+                         .param("dietType", "lekka"))
+                 .andExpect(status().isOk())
+                 .andExpect(view().name("meal-request"))
+                 .andExpect(model().attributeHasFieldErrors("mealRequest", "dishType"));
 
-        verify(mealSuggestionService, never()).suggest(any());
-    }
+         verify(mealSuggestionService, never()).suggest(any());
+     }
 
     @Test
     void shouldRenderResultsWhenFlashMealResponseIsProvided() throws Exception {

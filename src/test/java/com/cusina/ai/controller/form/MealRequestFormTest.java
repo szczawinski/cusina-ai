@@ -26,20 +26,20 @@ class MealRequestFormTest {
         assertThat(validator.validate(form)).isEmpty();
     }
 
-    @Test
-    void shouldRejectDishTypeOutsideClosedList() {
-        MealRequestForm form = new MealRequestForm();
-        form.setDishType("kolacja");
+     @Test
+     void shouldRejectDishTypeOutsideClosedList() {
+         MealRequestForm form = new MealRequestForm();
+         form.setDishType("invalid-dish-type");
 
-        assertThat(validator.validate(form)).extracting("propertyPath").anyMatch(path -> path.toString().equals("dishType"));
-    }
+         assertThat(validator.validate(form)).extracting("propertyPath").anyMatch(path -> path.toString().equals("dishType"));
+     }
 
-    @Test
-    void shouldRejectDietTypeOutsideClosedList() {
-        MealRequestForm form = new MealRequestForm();
-        form.setDietType("keto");
+     @Test
+     void shouldRejectDietTypeOutsideClosedList() {
+         MealRequestForm form = new MealRequestForm();
+         form.setDietType("invalid-diet-type");
 
-        assertThat(validator.validate(form)).extracting("propertyPath").anyMatch(path -> path.toString().equals("dietType"));
-    }
+         assertThat(validator.validate(form)).extracting("propertyPath").anyMatch(path -> path.toString().equals("dietType"));
+     }
 }
 

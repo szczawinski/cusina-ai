@@ -8,10 +8,10 @@ public class MealRequestForm {
     @Size(max = 500, message = "{meal.preferences.size}")
     private String dietaryPreferences;
 
-    @Pattern(regexp = "^(|śniadanie|obiad|deser)$", message = "{meal.dishType.invalid}")
+    @Pattern(regexp = "^(|śniadania|lunche|zupy|sałatki|makarony|dania główne|podwieczorki|napoje|kolacje)$", message = "{meal.dishType.invalid}")
     private String dishType;
 
-    @Pattern(regexp = "^(|lekka|śródziemnomorska|wegetariańska)$", message = "{meal.dietType.invalid}")
+    @Pattern(regexp = "^(|fit|wegańskie|wegetariańskie|bezglutenowe|na patrze|kuchnia azjatycka|kuchnia śródziemnomorska)$", message = "{meal.dietType.invalid}")
     private String dietType;
 
     public String getDietaryPreferences() {
