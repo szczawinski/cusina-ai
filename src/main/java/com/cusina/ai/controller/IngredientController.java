@@ -1,6 +1,7 @@
 package com.cusina.ai.controller;
 
 import com.cusina.ai.controller.form.IngredientForm;
+import com.cusina.ai.model.IngredientUnit;
 import com.cusina.ai.session.IngredientSession;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
@@ -34,6 +35,7 @@ public class IngredientController {
         }
         model.addAttribute("ingredients", ingredientSession.getIngredients());
         model.addAttribute("isFull", ingredientSession.isFull());
+        model.addAttribute("units", IngredientUnit.values());
         model.addAttribute("preloadedCount", 10);
         return "ingredients";
     }
@@ -48,7 +50,7 @@ public class IngredientController {
             return "redirect:/ingredients";
         }
 
-        IngredientSession.AddResult addResult = ingredientSession.addIngredient(form.getName());
+        IngredientSession.AddResult addResult = ingredientSession.addIngredient(form.getName(), form.getQuantity(), form.getUnit());
         String ingredientName = form.getName() == null ? "" : form.getName().trim();
         switch (addResult) {
             case ADDED -> redirectAttributes.addFlashAttribute("successMessage", "Dodano składnik: „" + ingredientName + "”.");

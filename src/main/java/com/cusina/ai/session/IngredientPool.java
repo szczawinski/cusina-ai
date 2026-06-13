@@ -13,9 +13,9 @@ import java.util.Set;
 public class IngredientPool {
 
     private static final List<String> CURATED_INGREDIENTS = List.of(
-            "Jajka", "Pomidor", "Ogórek", "Papryka", "Cebula", "Czosnek", "Ryż", "Makaron", "Kasza", "Marchew",
-            "Brokuł", "Szpinak", "Pieczarki", "Ser", "Twaróg", "Jogurt naturalny", "Kurczak", "Indyk", "Tuńczyk", "Fasola",
-            "Ciecierzyca", "Soczewica", "Ziemniaki", "Bataty", "Cukinia", "Bakłażan", "Płatki owsiane", "Mleko", "Masło", "Oliwa"
+            "Jajka", "Mleko", "Pierś z kurczaka", "Pomidor", "Ogórek", "Papryka", "Cebula", "Czosnek", "Ryż", "Makaron", "Kasza", "Marchew",
+            "Brokuł", "Szpinak", "Pieczarki", "Ser", "Twaróg", "Jogurt naturalny", "Indyk", "Tuńczyk", "Fasola",
+            "Ciecierzyca", "Soczewica", "Ziemniaki", "Bataty", "Cukinia", "Bakłażan", "Płatki owsiane", "Masło", "Oliwa"
     );
 
     private final SecureRandom random = new SecureRandom();

@@ -6,6 +6,7 @@ import java.util.List;
 public class MealRequest {
 
     private List<String> ingredients = new ArrayList<>();
+    private List<String> ingredientDetails = new ArrayList<>();
     private String dietaryPreferences;
     private DishType dishType;
     private DietType dietType;
@@ -17,6 +18,14 @@ public class MealRequest {
 
     public void setIngredients(List<String> ingredients) {
         this.ingredients = ingredients;
+    }
+
+    public List<String> getIngredientDetails() {
+        return ingredientDetails;
+    }
+
+    public void setIngredientDetails(List<String> ingredientDetails) {
+        this.ingredientDetails = ingredientDetails;
     }
 
     public String getDietaryPreferences() {

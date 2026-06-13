@@ -26,6 +26,7 @@ class MealSuggestionServiceTest {
     private MealRequest requestWithIngredients() {
         MealRequest request = new MealRequest();
         request.setIngredients(List.of("jajko", "pomidor", "ser", "cebula"));
+        request.setIngredientDetails(List.of("jajko (6 szt)", "pomidor (2 szt)", "ser (200 g)", "cebula (1 szt)"));
         request.setDietaryPreferences("bez orzechów");
         return request;
     }
@@ -176,7 +177,8 @@ class MealSuggestionServiceTest {
 
         verify(mealAiClient).requestMealSuggestionsJson(anyString(), argThat(prompt ->
                 prompt.contains("Typ dania (constraint): lunche")
-                        && prompt.contains("Typ diety (constraint): wegetariańskie")));
+                        && prompt.contains("Typ diety (constraint): wegetariańskie")
+                        && prompt.contains("jajko (6 szt)")));
     }
 }
 

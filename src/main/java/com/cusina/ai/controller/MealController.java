@@ -73,6 +73,7 @@ public class MealController {
 
         MealRequest mealRequest = new MealRequest();
         mealRequest.setIngredients(ingredientSession.getIngredientNames());
+        mealRequest.setIngredientDetails(ingredientSession.getIngredientPromptDetails());
         mealRequest.setDietaryPreferences(mealRequestForm.getDietaryPreferences());
         DishType.fromValue(mealRequestForm.getDishType()).ifPresent(mealRequest::setDishType);
         DietType.fromValue(mealRequestForm.getDietType()).ifPresent(mealRequest::setDietType);

@@ -1,6 +1,7 @@
 package com.cusina.ai.session;
 
 import com.cusina.ai.config.FirestorePersistenceProperties;
+import com.cusina.ai.model.Ingredient;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -22,7 +23,7 @@ class IngredientPersistenceServiceTest {
         FirestorePersistenceProperties properties = new FirestorePersistenceProperties();
         properties.setEnabled(false);
 
-        PersistedIngredientSession state = new PersistedIngredientSession(true, List.of("A"));
+        PersistedIngredientSession state = new PersistedIngredientSession(true, List.of(Ingredient.userAdded("A")));
         when(fileRepository.load("session:a")).thenReturn(Optional.of(state));
 
         IngredientPersistenceService service = new IngredientPersistenceService(fileRepository, firestoreRepository, properties);
@@ -38,7 +39,7 @@ class IngredientPersistenceServiceTest {
         FirestorePersistenceProperties properties = new FirestorePersistenceProperties();
         properties.setEnabled(true);
 
-        PersistedIngredientSession state = new PersistedIngredientSession(true, List.of("A"));
+        PersistedIngredientSession state = new PersistedIngredientSession(true, List.of(Ingredient.userAdded("A")));
         when(fileRepository.load("session:a")).thenReturn(Optional.of(state));
         when(firestoreRepository.load(any())).thenThrow(new IllegalStateException("boom"));
 
@@ -52,4 +53,5 @@ class IngredientPersistenceServiceTest {
         verify(fileRepository).save("session:a", state);
     }
 }
+
 

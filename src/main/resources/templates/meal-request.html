@@ -7,7 +7,7 @@
     <div class="card">
         <h2>Wybrane składniki</h2>
         <ul class="ingredient-summary">
-            <li th:each="ingredient : ${ingredients}" th:text="${ingredient.displayName}"></li>
+            <li th:each="ingredient : ${ingredients}" th:text="${ingredient.displayName + ' (' + ingredient.displayAmount + ')'}"></li>
         </ul>
         <a class="cta-link" th:href="@{/ingredients}">Edytuj składniki</a>
     </div>

@@ -10,6 +10,13 @@
         <form th:action="@{/ingredients/add}" method="post" th:object="${addForm}">
             <label for="name">Dodaj składnik</label>
             <input id="name" type="text" th:field="*{name}" placeholder="np. pierś z kurczaka"/>
+            <label for="quantity">Ilość (opcjonalnie)</label>
+            <input id="quantity" type="number" step="0.01" min="0.01" th:field="*{quantity}" placeholder="np. 500"/>
+            <label for="unit">Jednostka (opcjonalnie)</label>
+            <select id="unit" th:field="*{unit}">
+                <option value="">Automatycznie</option>
+                <option th:each="unit : ${units}" th:value="${unit.value()}" th:text="${unit.value()}"></option>
+            </select>
             <button type="submit" th:disabled="${isFull}">Dodaj składnik</button>
         </form>
         <p th:if="${#lists.isEmpty(ingredients)}" class="empty-state">Dodaj składniki z lodówki lub spiżarni, aby otrzymać sugestie dań.</p>
@@ -17,6 +24,7 @@
         <div th:each="ingredient : ${ingredients}" class="list-row ingredient-row">
             <div>
                 <span class="ingredient-name" th:text="${ingredient.displayName}"></span>
+                <small class="meta" th:text="${'• ' + ingredient.displayAmount}"></small>
                 <small class="meta" th:if="${ingredient.source.name() == 'PRELOADED'}">• startowe</small>
             </div>
             <form th:action="@{/ingredients/remove}" method="post">

@@ -1,6 +1,7 @@
 package com.cusina.ai.session;
 
 import com.cusina.ai.model.Ingredient;
+import com.cusina.ai.model.IngredientUnit;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.SessionScope;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -60,7 +62,8 @@ public class IngredientSession implements Serializable {
 
         List<String> preloaded = ingredientPool.drawUnique(PRELOAD_COUNT);
         for (String name : preloaded) {
-            Ingredient ingredient = Ingredient.preloaded(name);
+            IngredientDefaults.Amount amount = IngredientDefaults.resolvePreloaded(name);
+            Ingredient ingredient = Ingredient.preloaded(name, amount.quantity(), amount.unit());
             ingredientsByKey.putIfAbsent(ingredient.normalizedKey(), ingredient);
         }
         initialized = true;
@@ -68,6 +71,10 @@ public class IngredientSession implements Serializable {
     }
 
     public AddResult addIngredient(String rawName) {
+        return addIngredient(rawName, null, null);
+    }
+
+    public AddResult addIngredient(String rawName, BigDecimal quantity, String unitRaw) {
         ensureStateLoaded();
         if (rawName == null || rawName.isBlank()) {
             return AddResult.INVALID;
@@ -77,7 +84,10 @@ public class IngredientSession implements Serializable {
         }
         Ingredient ingredient;
         try {
-            ingredient = Ingredient.userAdded(rawName);
+            IngredientDefaults.Amount defaults = IngredientDefaults.inferForName(rawName);
+            BigDecimal resolvedQuantity = quantity != null ? quantity : defaults.quantity();
+            IngredientUnit resolvedUnit = IngredientUnit.fromValue(unitRaw).orElse(defaults.unit());
+            ingredient = Ingredient.userAdded(rawName, resolvedQuantity, resolvedUnit);
         } catch (IllegalArgumentException ex) {
             return AddResult.INVALID;
         }
@@ -115,6 +125,12 @@ public class IngredientSession implements Serializable {
         return getIngredients().stream().map(Ingredient::displayName).toList();
     }
 
+    public List<String> getIngredientPromptDetails() {
+        return getIngredients().stream()
+                .map(ingredient -> ingredient.displayName() + " (" + ingredient.displayAmount() + ")")
+                .toList();
+    }
+
     public boolean isEmpty() {
         ensureStateLoaded();
         return ingredientsByKey.isEmpty();
@@ -144,8 +160,7 @@ public class IngredientSession implements Serializable {
 
         persistenceService.load(sessionKey).ifPresent(state -> {
             ingredientsByKey.clear();
-            for (String name : state.ingredientNames()) {
-                Ingredient ingredient = Ingredient.userAdded(name);
+            for (Ingredient ingredient : state.resolvedIngredients()) {
                 ingredientsByKey.putIfAbsent(ingredient.normalizedKey(), ingredient);
             }
             initialized = state.initialized();
@@ -154,6 +169,6 @@ public class IngredientSession implements Serializable {
     }
 
     private void persist() {
-        persistenceService.save(sessionKey, new PersistedIngredientSession(initialized, getIngredientNames()));
+        persistenceService.save(sessionKey, new PersistedIngredientSession(initialized, getIngredients()));
     }
 }

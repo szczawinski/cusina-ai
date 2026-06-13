@@ -1,6 +1,7 @@
 package com.cusina.ai.session;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.cusina.ai.model.Ingredient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,8 +49,8 @@ public class IngredientFileRepository implements IngredientSessionRepository {
             return Optional.empty();
         }
 
-        List<String> names = sanitizeNames(state.ingredientNames());
-        return Optional.of(new PersistedIngredientSession(state.initialized(), names));
+        List<Ingredient> ingredients = sanitizeIngredients(state.resolvedIngredients());
+        return Optional.of(new PersistedIngredientSession(state.initialized(), ingredients));
     }
 
     @Override
@@ -65,7 +66,7 @@ public class IngredientFileRepository implements IngredientSessionRepository {
             }
 
             Map<String, PersistedIngredientSession> states = readAllStates();
-            states.put(sessionKey, new PersistedIngredientSession(state.initialized(), sanitizeNames(state.ingredientNames())));
+            states.put(sessionKey, new PersistedIngredientSession(state.initialized(), sanitizeIngredients(state.resolvedIngredients())));
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(filePath.toFile(), states);
         } catch (IOException ex) {
             log.warn("Could not save ingredients to {}.", filePath, ex);
@@ -90,16 +91,23 @@ public class IngredientFileRepository implements IngredientSessionRepository {
         }
     }
 
-    private List<String> sanitizeNames(List<String> names) {
-        if (names == null) {
+    private List<Ingredient> sanitizeIngredients(List<Ingredient> ingredients) {
+        if (ingredients == null) {
             return List.of();
         }
-        return names.stream()
+        return ingredients.stream()
                 .filter(Objects::nonNull)
-                .map(String::trim)
-                .filter(name -> !name.isBlank())
+                .map(this::sanitizeIngredient)
                 .toList();
     }
+
+    private Ingredient sanitizeIngredient(Ingredient ingredient) {
+        IngredientDefaults.Amount defaults = IngredientDefaults.inferForName(ingredient.displayName());
+        return new Ingredient(
+                ingredient.displayName(),
+                ingredient.quantity() == null ? defaults.quantity() : ingredient.quantity(),
+                ingredient.unit() == null ? defaults.unit() : ingredient.unit(),
+                ingredient.source() == null ? Ingredient.Source.USER_ADDED : ingredient.source()
+        );
+    }
 }
-
-

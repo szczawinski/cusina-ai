@@ -180,14 +180,17 @@ public class MealSuggestionService {
     }
 
     String buildSystemPrompt() {
-        return "Jesteś szefem kuchni. Odpowiedz WYŁĄCZNIE poprawnym JSON w formacie {\"meals\":[{\"name\":\"string\",\"description\":\"string\",\"steps\":[\"string\"],\"usedIngredients\":[\"string\"]}]}. Zwróć dokładnie 3 sugestie, używaj wyłącznie języka polskiego i wskazuj tylko składniki przekazane przez użytkownika.";
+        return "Jesteś szefem kuchni. Odpowiedz WYŁĄCZNIE poprawnym JSON w formacie {\"meals\":[{\"name\":\"string\",\"description\":\"string\",\"steps\":[\"string\"],\"usedIngredients\":[\"string\"]}]}. Zwróć dokładnie 3 sugestie, używaj wyłącznie języka polskiego, respektuj dostępne ilości/jednostki i wskazuj tylko składniki przekazane przez użytkownika.";
     }
 
     String buildUserPrompt(MealRequest request) {
+        String ingredientContext = (request.getIngredientDetails() == null || request.getIngredientDetails().isEmpty())
+                ? String.join(", ", request.getIngredients())
+                : String.join(", ", request.getIngredientDetails());
         String preferences = (request.getDietaryPreferences() == null || request.getDietaryPreferences().isBlank()) ? "brak" : request.getDietaryPreferences().trim();
         String dishType = request.getDishType() == null ? "brak" : request.getDishType().value();
         String dietType = request.getDietType() == null ? "brak" : request.getDietType().value();
-        return "Dostępne składniki: " + String.join(", ", request.getIngredients())
+        return "Dostępne składniki (ilość + jednostka): " + ingredientContext
                 + ". Preferencje żywieniowe: " + preferences
                 + ". Typ dania (constraint): " + dishType
                 + ". Typ diety (constraint): " + dietType

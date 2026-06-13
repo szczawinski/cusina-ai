@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -38,16 +39,19 @@ class IngredientControllerTest {
         mockMvc.perform(get("/ingredients"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("ingredients"))
-                .andExpect(model().attributeExists("ingredients", "addForm", "isFull"));
+                .andExpect(model().attributeExists("ingredients", "addForm", "isFull", "units"));
 
         verify(ingredientSession).initializeIfNeeded();
     }
 
     @Test
     void shouldAddIngredientAndRedirect() throws Exception {
-        when(ingredientSession.addIngredient(anyString())).thenReturn(IngredientSession.AddResult.ADDED);
+        when(ingredientSession.addIngredient(anyString(), any(), any())).thenReturn(IngredientSession.AddResult.ADDED);
 
-        mockMvc.perform(post("/ingredients/add").param("name", "Garlic"))
+        mockMvc.perform(post("/ingredients/add")
+                        .param("name", "Garlic")
+                        .param("quantity", "200")
+                        .param("unit", "g"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/ingredients"))
                 .andExpect(flash().attribute("successMessage", "Dodano składnik: „Garlic”."));
@@ -55,7 +59,7 @@ class IngredientControllerTest {
 
     @Test
     void shouldRejectDuplicateIngredientWithPolishFlashMessage() throws Exception {
-        when(ingredientSession.addIngredient(anyString())).thenReturn(IngredientSession.AddResult.DUPLICATE);
+        when(ingredientSession.addIngredient(anyString(), any(), any())).thenReturn(IngredientSession.AddResult.DUPLICATE);
 
         mockMvc.perform(post("/ingredients/add").param("name", "Garlic"))
                 .andExpect(status().is3xxRedirection())

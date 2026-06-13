@@ -1,6 +1,8 @@
 package com.cusina.ai.session;
 
 import com.cusina.ai.config.FirestorePersistenceProperties;
+import com.cusina.ai.model.Ingredient;
+import com.cusina.ai.model.IngredientUnit;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.firestore.FieldValue;
 import com.google.cloud.firestore.Firestore;
@@ -11,8 +13,11 @@ import org.springframework.stereotype.Component;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -47,8 +52,11 @@ public class IngredientFirestoreRepository implements IngredientSessionRepositor
             }
 
             Boolean initialized = snapshot.getBoolean("initialized");
-            List<String> names = sanitizeNames(snapshot.get("ingredientNames"));
-            return Optional.of(new PersistedIngredientSession(Boolean.TRUE.equals(initialized), names));
+            List<Ingredient> ingredients = sanitizeIngredients(snapshot.get("ingredients"));
+            if (ingredients.isEmpty()) {
+                ingredients = sanitizeIngredients(snapshot.get("ingredientNames"));
+            }
+            return Optional.of(new PersistedIngredientSession(Boolean.TRUE.equals(initialized), ingredients));
         } catch (Exception ex) {
             throw new IllegalStateException("Firestore read failed", ex);
         }
@@ -60,7 +68,8 @@ public class IngredientFirestoreRepository implements IngredientSessionRepositor
         try {
             Map<String, Object> payload = Map.of(
                     "initialized", state.initialized(),
-                    "ingredientNames", sanitizeNames(state.ingredientNames()),
+                    "ingredients", toFirestoreIngredients(state.resolvedIngredients()),
+                    "ingredientNames", state.resolvedIngredients().stream().map(Ingredient::displayName).toList(),
                     "updatedAt", FieldValue.serverTimestamp()
             );
 
@@ -135,15 +144,69 @@ public class IngredientFirestoreRepository implements IngredientSessionRepositor
         return value != null && !value.isBlank();
     }
 
-    private List<String> sanitizeNames(Object namesValue) {
-        if (!(namesValue instanceof List<?> names)) {
+    private List<Ingredient> sanitizeIngredients(Object rawValue) {
+        if (!(rawValue instanceof List<?> rawList)) {
             return List.of();
         }
-        return names.stream()
-                .filter(Objects::nonNull)
-                .map(Object::toString)
-                .map(String::trim)
-                .filter(name -> !name.isBlank())
-                .toList();
+
+        List<Ingredient> ingredients = new ArrayList<>();
+        for (Object entry : rawList) {
+            if (entry == null) {
+                continue;
+            }
+            if (entry instanceof String name) {
+                IngredientDefaults.Amount defaults = IngredientDefaults.inferForName(name);
+                ingredients.add(Ingredient.userAdded(name, defaults.quantity(), defaults.unit()));
+                continue;
+            }
+            if (entry instanceof Map<?, ?> mapEntry) {
+                Ingredient ingredient = sanitizeIngredientMap(mapEntry);
+                if (ingredient != null) {
+                    ingredients.add(ingredient);
+                }
+            }
+        }
+        return ingredients;
+    }
+
+    private Ingredient sanitizeIngredientMap(Map<?, ?> mapEntry) {
+        String name = Objects.toString(mapEntry.get("displayName"), "").trim();
+        if (name.isBlank()) {
+            return null;
+        }
+        IngredientDefaults.Amount defaults = IngredientDefaults.inferForName(name);
+        BigDecimal quantity = parseQuantity(mapEntry.get("quantity"), defaults.quantity());
+        IngredientUnit unit = IngredientUnit.fromValue(Objects.toString(mapEntry.get("unit"), null)).orElse(defaults.unit());
+
+        Ingredient.Source source;
+        try {
+            source = Ingredient.Source.valueOf(Objects.toString(mapEntry.get("source"), "USER_ADDED"));
+        } catch (IllegalArgumentException ex) {
+            source = Ingredient.Source.USER_ADDED;
+        }
+        return new Ingredient(name, quantity, unit, source);
+    }
+
+    private BigDecimal parseQuantity(Object rawQuantity, BigDecimal fallback) {
+        if (rawQuantity == null) {
+            return fallback;
+        }
+        try {
+            return new BigDecimal(rawQuantity.toString());
+        } catch (NumberFormatException ex) {
+            return fallback;
+        }
+    }
+
+    private List<Map<String, Object>> toFirestoreIngredients(List<Ingredient> ingredients) {
+        return ingredients.stream().map(ingredient -> {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("displayName", ingredient.displayName());
+            map.put("quantity", ingredient.quantity());
+            map.put("unit", ingredient.unit().value());
+            map.put("source", ingredient.source().name());
+            return map;
+        }).toList();
     }
 }
+
