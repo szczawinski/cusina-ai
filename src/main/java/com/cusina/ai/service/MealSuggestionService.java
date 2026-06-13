@@ -5,6 +5,8 @@ import com.cusina.ai.model.MealRequest;
 import com.cusina.ai.model.MealResponse;
 import com.cusina.ai.model.MealSuggestion;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +18,7 @@ import java.util.regex.Pattern;
 
 @Service
 public class MealSuggestionService {
+    private static final Logger logger = LoggerFactory.getLogger(MealSuggestionService.class);
 
     private static final Pattern CODE_FENCE_PATTERN = Pattern.compile("(?s)```(?:json)?\\s*(.*?)\\s*```");
     private static final String PARSE_ERROR = "Nie udało się przetworzyć odpowiedzi AI. Spróbuj ponownie.";
@@ -37,15 +40,28 @@ public class MealSuggestionService {
 
     @Async("aiTaskExecutor")
     public CompletableFuture<MealResponse> suggest(MealRequest request) {
+        long startTime = System.currentTimeMillis();
         try {
             String systemPrompt = buildSystemPrompt();
             String userPrompt = buildUserPrompt(request);
+            
+            long beforeAiCall = System.currentTimeMillis();
             String rawPayload = mealAiClient.requestMealSuggestionsJson(systemPrompt, userPrompt);
+            long afterAiCall = System.currentTimeMillis();
+            logger.info("Anthropic API response time: {} ms", (afterAiCall - beforeAiCall));
+            
             MealResponse rawResponse = parseResponse(rawPayload);
+            long endTime = System.currentTimeMillis();
+            logger.info("Total meal suggestion processing time: {} ms", (endTime - startTime));
+            
             return CompletableFuture.completedFuture(validateAndFilter(rawResponse, request.getIngredients()));
         } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
+            long endTime = System.currentTimeMillis();
+            logger.error("JSON processing error after {} ms", (endTime - startTime), ex);
             return CompletableFuture.completedFuture(MealResponse.error(PARSE_ERROR));
         } catch (Exception ex) {
+            long endTime = System.currentTimeMillis();
+            logger.error("AI request error after {} ms", (endTime - startTime), ex);
             return CompletableFuture.completedFuture(MealResponse.error(AI_ERROR));
         }
     }

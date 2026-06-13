@@ -11,6 +11,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.time.Duration;
+
 @Configuration
 @EnableConfigurationProperties({AnthropicProperties.class, AiProviderProperties.class, OllamaProperties.class})
 public class AnthropicConfig {
@@ -18,8 +20,11 @@ public class AnthropicConfig {
     @Bean
     @ConditionalOnProperty(prefix = "ai", name = "provider", havingValue = "anthropic", matchIfMissing = true)
     public AnthropicClient anthropicClient(AnthropicProperties properties) {
+        // Ustaw timeout na 20 sekund dla połączenia HTTP
+        // OkHttp timeout: connection, read, write
         return AnthropicOkHttpClient.builder()
                 .apiKey(properties.getApiKey())
+                .timeout(Duration.ofSeconds(20))
                 .build();
     }
 
