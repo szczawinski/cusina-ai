@@ -56,7 +56,7 @@ public class IngredientController {
             case ADDED -> redirectAttributes.addFlashAttribute("successMessage", "Dodano składnik: „" + ingredientName + "”.");
             case DUPLICATE -> redirectAttributes.addFlashAttribute("errorMessage", "Składnik „" + ingredientName + "” już jest na liście.");
             case FULL -> redirectAttributes.addFlashAttribute("errorMessage", "Osiągnięto limit 50 składników w sesji.");
-            default -> redirectAttributes.addFlashAttribute("errorMessage", "Nazwa składnika nie może być pusta.");
+            default -> redirectAttributes.addFlashAttribute("errorMessage", "Nieprawidłowe dane składnika. Dla „szt” podaj dodatnią liczbę całkowitą, a dla g/kg/ml/l ilość większą od 0.");
         }
         return "redirect:/ingredients";
     }

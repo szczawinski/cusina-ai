@@ -80,6 +80,30 @@ class IngredientSessionTest {
     }
 
     @Test
+    void shouldNormalizeManualMetricValuesWhenAddingIngredient() {
+        IngredientSession session = createSessionWithPreload(List.of(
+                "Jajka", "Pomidor", "Ogórek", "Papryka", "Cebula", "Czosnek", "Ryż", "Makaron", "Kasza", "Marchew"
+        ));
+        session.initializeIfNeeded();
+
+        assertThat(session.addIngredient("Woda", BigDecimal.valueOf(2000), "ml")).isEqualTo(IngredientSession.AddResult.ADDED);
+
+        assertThat(session.getIngredients().stream().filter(i -> i.displayName().equals("Woda")).findFirst().orElseThrow().displayAmount())
+                .isEqualTo("2 l");
+    }
+
+    @Test
+    void shouldRejectFractionalQuantityForPiecesUnit() {
+        IngredientSession session = createSessionWithPreload(List.of(
+                "Jajka", "Pomidor", "Ogórek", "Papryka", "Cebula", "Czosnek", "Ryż", "Makaron", "Kasza", "Marchew"
+        ));
+        session.initializeIfNeeded();
+
+        assertThat(session.addIngredient("Jaja przepiórcze", BigDecimal.valueOf(1.5), "szt"))
+                .isEqualTo(IngredientSession.AddResult.INVALID);
+    }
+
+    @Test
     void shouldEnforceFiftyIngredientCap() {
         IngredientSession session = createSessionWithPreload(List.of(
                 "Jajka", "Pomidor", "Ogórek", "Papryka", "Cebula", "Czosnek", "Ryż", "Makaron", "Kasza", "Marchew"

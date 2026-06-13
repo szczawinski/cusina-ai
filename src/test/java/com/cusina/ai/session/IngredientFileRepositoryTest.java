@@ -61,5 +61,19 @@ class IngredientFileRepositoryTest {
         assertThat(loaded.resolvedIngredients()).extracting(Ingredient::displayAmount)
                 .containsExactly("1 l", "6 szt");
     }
+
+    @Test
+    void shouldKeepPersistenceCompatibleAndNormalizeMetricMultiplesOnLoad() {
+        Path file = tempDir.resolve("normalized.json");
+        IngredientFileRepository repository = new IngredientFileRepository(new ObjectMapper(), file);
+
+        repository.save("session:a", new PersistedIngredientSession(true, List.of(
+                Ingredient.userAdded("Woda", BigDecimal.valueOf(2000), IngredientUnit.ML)
+        )));
+
+        PersistedIngredientSession loaded = repository.load("session:a").orElseThrow();
+        assertThat(loaded.resolvedIngredients()).extracting(Ingredient::displayAmount)
+                .containsExactly("2 l");
+    }
 }
 

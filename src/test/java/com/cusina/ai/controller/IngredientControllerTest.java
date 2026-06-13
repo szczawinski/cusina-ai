@@ -68,6 +68,19 @@ class IngredientControllerTest {
     }
 
     @Test
+    void shouldRejectFractionalQuantityForPiecesUnit() throws Exception {
+        mockMvc.perform(post("/ingredients/add")
+                        .param("name", "Jajka")
+                        .param("quantity", "1.5")
+                        .param("unit", "szt"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/ingredients"))
+                .andExpect(flash().attribute("errorMessage", "Dla jednostki \"szt\" podaj dodatnią liczbę całkowitą."));
+
+        verify(ingredientSession, never()).addIngredient(anyString(), any(), any());
+    }
+
+    @Test
     void shouldRemoveIngredientAndRedirect() throws Exception {
         when(ingredientSession.removeIngredientAndReport("garlic")).thenReturn(true);
 

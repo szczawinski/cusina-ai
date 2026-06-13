@@ -1,5 +1,7 @@
 package com.cusina.ai.controller.form;
 
+import com.cusina.ai.model.IngredientUnit;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
@@ -43,6 +45,20 @@ public class IngredientForm {
 
     public void setUnit(String unit) {
         this.unit = unit;
+    }
+
+    @AssertTrue(message = "{ingredient.quantity.integerForPieces}")
+    public boolean isQuantityCompatibleWithUnit() {
+        if (quantity == null) {
+            return true;
+        }
+
+        IngredientUnit resolvedUnit = IngredientUnit.fromValue(unit).orElse(null);
+        if (resolvedUnit != IngredientUnit.SZT) {
+            return true;
+        }
+
+        return quantity.stripTrailingZeros().scale() <= 0;
     }
 }
 
