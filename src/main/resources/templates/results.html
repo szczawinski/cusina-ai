@@ -1,28 +1,33 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{fragments/layout :: page('Your Meal Suggestions', ~{::section})}">
+<html lang="pl" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Wyniki sugestii dań', ~{::section})}">
 <section>
-    <h1>Your Meal Suggestions</h1>
+    <h1>Proponowane dania</h1>
 
     <div th:if="${mealResponse.hasError()}" class="flash-error">
-        <p th:text="${mealResponse.error}"></p>
-        <a th:href="@{/meal-request}">Try Again</a>
+        <p th:text="${mealResponse.errorPl}"></p>
+        <a class="cta-link" th:href="@{/meal-request}">Spróbuj ponownie</a>
     </div>
 
-    <div th:if="${mealResponse.hasWarning()}" class="warning" th:text="${mealResponse.warning}"></div>
+    <div th:if="${mealResponse.hasWarning()}" class="warning" th:text="${mealResponse.warningPl}"></div>
 
-    <div th:unless="${mealResponse.hasError()}">
-        <article class="card" th:each="meal : ${mealResponse.meals}">
+    <div th:unless="${mealResponse.hasError()}" class="results-grid">
+        <article class="card meal-card" th:each="meal : ${mealResponse.meals}">
             <h2 th:text="${meal.name}"></h2>
             <p th:text="${meal.description}"></p>
+            <p class="meta" th:if="${meal.usedIngredients != null and !meal.usedIngredients.isEmpty()}">
+                Użyte składniki: <span th:text="${#strings.listJoin(meal.usedIngredients, ', ')}"></span>
+            </p>
             <ol>
                 <li th:each="step : ${meal.steps}" th:text="${step}"></li>
             </ol>
         </article>
     </div>
 
-    <a th:href="@{/ingredients}">Start Over</a>
-    <a th:href="@{/meal-request}">New Search</a>
+    <div class="actions-row">
+        <a class="cta-link" th:href="@{/ingredients}">Wróć do składników</a>
+        <a class="cta-link" th:href="@{/meal-request}">Nowe zapytanie</a>
+    </div>
 </section>
 </html>
 

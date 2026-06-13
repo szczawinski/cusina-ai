@@ -3,8 +3,13 @@ target
 .idea
 .vscode
 *.iml
+node_modules
 logs
 data
 specs
 .specify
-
+Dockerfile*
+.dockerignore
+*.log*
+.env*
+coverage

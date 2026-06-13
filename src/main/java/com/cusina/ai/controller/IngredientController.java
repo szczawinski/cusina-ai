@@ -28,11 +28,13 @@ public class IngredientController {
 
     @GetMapping("/ingredients")
     public String showIngredients(Model model) {
+        ingredientSession.initializeIfNeeded();
         if (!model.containsAttribute("addForm")) {
             model.addAttribute("addForm", new IngredientForm());
         }
         model.addAttribute("ingredients", ingredientSession.getIngredients());
         model.addAttribute("isFull", ingredientSession.isFull());
+        model.addAttribute("preloadedCount", 10);
         return "ingredients";
     }
 
@@ -47,18 +49,23 @@ public class IngredientController {
         }
 
         IngredientSession.AddResult addResult = ingredientSession.addIngredient(form.getName());
+        String ingredientName = form.getName() == null ? "" : form.getName().trim();
         switch (addResult) {
-            case ADDED -> redirectAttributes.addFlashAttribute("successMessage", "'" + form.getName().trim() + "' added.");
-            case DUPLICATE -> redirectAttributes.addFlashAttribute("errorMessage", "'" + form.getName().trim() + "' is already in your list.");
-            case FULL -> redirectAttributes.addFlashAttribute("errorMessage", "You have reached the maximum of 50 ingredients.");
-            default -> redirectAttributes.addFlashAttribute("errorMessage", "Ingredient name cannot be empty.");
+            case ADDED -> redirectAttributes.addFlashAttribute("successMessage", "Dodano składnik: „" + ingredientName + "”.");
+            case DUPLICATE -> redirectAttributes.addFlashAttribute("errorMessage", "Składnik „" + ingredientName + "” już jest na liście.");
+            case FULL -> redirectAttributes.addFlashAttribute("errorMessage", "Osiągnięto limit 50 składników w sesji.");
+            default -> redirectAttributes.addFlashAttribute("errorMessage", "Nazwa składnika nie może być pusta.");
         }
         return "redirect:/ingredients";
     }
 
     @PostMapping("/ingredients/remove")
-    public String removeIngredient(@RequestParam("normalizedKey") String normalizedKey) {
-        ingredientSession.removeIngredient(normalizedKey);
+    public String removeIngredient(@RequestParam("normalizedKey") String normalizedKey,
+                                   RedirectAttributes redirectAttributes) {
+        boolean removed = ingredientSession.removeIngredientAndReport(normalizedKey);
+        if (removed) {
+            redirectAttributes.addFlashAttribute("successMessage", "Usunięto składnik z listy.");
+        }
         return "redirect:/ingredients";
     }
 }

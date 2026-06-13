@@ -1,16 +1,15 @@
 package com.cusina.ai.model;
 
-import jakarta.validation.constraints.Size;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public class MealRequest {
 
     private List<String> ingredients = new ArrayList<>();
-
-    @Size(max = 500, message = "Dietary preferences must be 500 characters or fewer.")
     private String dietaryPreferences;
+    private DishType dishType;
+    private DietType dietType;
+    private String locale = "pl-PL";
 
     public List<String> getIngredients() {
         return ingredients;
@@ -26,6 +25,30 @@ public class MealRequest {
 
     public void setDietaryPreferences(String dietaryPreferences) {
         this.dietaryPreferences = dietaryPreferences;
+    }
+
+    public String getLocale() {
+        return locale;
+    }
+
+    public void setLocale(String locale) {
+        this.locale = locale;
+    }
+
+    public DishType getDishType() {
+        return dishType;
+    }
+
+    public void setDishType(DishType dishType) {
+        this.dishType = dishType;
+    }
+
+    public DietType getDietType() {
+        return dietType;
+    }
+
+    public void setDietType(DietType dietType) {
+        this.dietType = dietType;
     }
 }
 

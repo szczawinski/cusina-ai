@@ -1,6 +1,7 @@
 package com.cusina.ai.service;
 
 import com.cusina.ai.config.AnthropicProperties;
+import com.cusina.ai.model.MealRequest;
 import com.cusina.ai.model.MealResponse;
 import com.cusina.ai.model.MealSuggestion;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,9 +18,10 @@ import java.util.regex.Pattern;
 public class MealSuggestionService {
 
     private static final Pattern CODE_FENCE_PATTERN = Pattern.compile("(?s)```(?:json)?\\s*(.*?)\\s*```");
-    private static final String PARSE_ERROR = "We couldn't process the AI response. Please retry.";
-    private static final String INVALID_COUNT_ERROR = "We couldn't validate the AI response. Please retry.";
-    private static final String AI_ERROR = "Unable to reach the AI service. Please try again.";
+    private static final String PARSE_ERROR = "Nie udało się przetworzyć odpowiedzi AI. Spróbuj ponownie.";
+    private static final String INVALID_COUNT_ERROR = "Odpowiedź AI nie spełnia wymogu dokładnie 3 sugestii. Spróbuj ponownie.";
+    private static final String AI_ERROR = "Nie udało się połączyć z usługą AI. Spróbuj ponownie.";
+    private static final String LANGUAGE_ERROR = "Odpowiedź AI nie była w języku polskim. Spróbuj ponownie.";
 
     private final MealAiClient mealAiClient;
     private final ObjectMapper objectMapper;
@@ -34,13 +36,13 @@ public class MealSuggestionService {
     }
 
     @Async("aiTaskExecutor")
-    public CompletableFuture<MealResponse> suggest(List<String> ingredients, String dietaryPreferences) {
+    public CompletableFuture<MealResponse> suggest(MealRequest request) {
         try {
             String systemPrompt = buildSystemPrompt();
-            String userPrompt = buildUserPrompt(ingredients, dietaryPreferences);
+            String userPrompt = buildUserPrompt(request);
             String rawPayload = mealAiClient.requestMealSuggestionsJson(systemPrompt, userPrompt);
             MealResponse rawResponse = parseResponse(rawPayload);
-            return CompletableFuture.completedFuture(validateAndFilter(rawResponse));
+            return CompletableFuture.completedFuture(validateAndFilter(rawResponse, request.getIngredients()));
         } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
             return CompletableFuture.completedFuture(MealResponse.error(PARSE_ERROR));
         } catch (Exception ex) {
@@ -116,8 +118,13 @@ public class MealSuggestionService {
         return null;
     }
 
-    MealResponse validateAndFilter(MealResponse rawResponse) {
-        if (rawResponse == null || rawResponse.getMeals() == null || rawResponse.getMeals().size() != anthropicProperties.getMealCount()) {
+    MealResponse validateAndFilter(MealResponse rawResponse, List<String> availableIngredients) {
+        if (rawResponse == null || rawResponse.getMeals() == null) {
+            return MealResponse.error(INVALID_COUNT_ERROR);
+        }
+
+        rawResponse.setRawCount(rawResponse.getMeals().size());
+        if (rawResponse.getRawCount() != anthropicProperties.getMealCount()) {
             return MealResponse.error(INVALID_COUNT_ERROR);
         }
 
@@ -125,7 +132,10 @@ public class MealSuggestionService {
         int omitted = 0;
 
         for (MealSuggestion meal : rawResponse.getMeals()) {
-            if (meal != null && meal.isValid()) {
+            if (meal != null && meal.isValid() && meal.usesValidIngredientSubset(availableIngredients)) {
+                if (!isLikelyPolish(meal)) {
+                    return MealResponse.error(LANGUAGE_ERROR);
+                }
                 validMeals.add(meal);
             } else {
                 omitted++;
@@ -133,21 +143,39 @@ public class MealSuggestionService {
         }
 
         MealResponse response = new MealResponse();
+        response.setRawCount(rawResponse.getRawCount());
         response.setMeals(validMeals);
         response.setOmittedMalformedCount(omitted);
         if (omitted > 0) {
-            response.setWarning("Some suggestions were omitted because they were malformed.");
+            response.setWarningPl("Część sugestii pominięto, ponieważ miały niepełne dane.");
         }
         return response;
     }
 
-    String buildSystemPrompt() {
-        return "You are a creative meal planning chef. Respond ONLY with valid JSON matching {\"meals\":[{\"name\":\"string\",\"description\":\"string\",\"steps\":[\"string\"]}]}. Always return exactly 3 suggestions.";
+    boolean isLikelyPolish(MealSuggestion suggestion) {
+        String text = ((suggestion.getName() == null ? "" : suggestion.getName()) + " "
+                + (suggestion.getDescription() == null ? "" : suggestion.getDescription()) + " "
+                + String.join(" ", suggestion.getSteps() == null ? List.of() : suggestion.getSteps())).toLowerCase();
+
+        boolean hasPolishDiacritics = text.matches(".*[ąćęłńóśźż].*");
+        boolean hasPolishTokens = text.contains(" i ") || text.contains(" oraz ") || text.contains(" z ")
+                || text.contains("na ") || text.contains("przez ") || text.contains("dodaj");
+        return hasPolishDiacritics || hasPolishTokens;
     }
 
-    String buildUserPrompt(List<String> ingredients, String dietaryPreferences) {
-        String preferences = (dietaryPreferences == null || dietaryPreferences.isBlank()) ? "none" : dietaryPreferences.trim();
-        return "Available ingredients: " + String.join(", ", ingredients) + ". Dietary preferences: " + preferences + ". Suggest exactly 3 practical meals.";
+    String buildSystemPrompt() {
+        return "Jesteś szefem kuchni. Odpowiedz WYŁĄCZNIE poprawnym JSON w formacie {\"meals\":[{\"name\":\"string\",\"description\":\"string\",\"steps\":[\"string\"],\"usedIngredients\":[\"string\"]}]}. Zwróć dokładnie 3 sugestie, używaj wyłącznie języka polskiego i wskazuj tylko składniki przekazane przez użytkownika.";
+    }
+
+    String buildUserPrompt(MealRequest request) {
+        String preferences = (request.getDietaryPreferences() == null || request.getDietaryPreferences().isBlank()) ? "brak" : request.getDietaryPreferences().trim();
+        String dishType = request.getDishType() == null ? "brak" : request.getDishType().value();
+        String dietType = request.getDietType() == null ? "brak" : request.getDietType().value();
+        return "Dostępne składniki: " + String.join(", ", request.getIngredients())
+                + ". Preferencje żywieniowe: " + preferences
+                + ". Typ dania (constraint): " + dishType
+                + ". Typ diety (constraint): " + dietType
+                + ". Każda sugestia ma użyć niepustego podzbioru dostępnych składników i zawierać pole usedIngredients. Zaproponuj dokładnie 3 praktyczne dania.";
     }
 }
 

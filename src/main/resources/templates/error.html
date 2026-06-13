@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{fragments/layout :: page('Error', ~{::section})}">
+<html lang="pl" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Błąd', ~{::section})}">
 <section>
-    <h1>Something went wrong</h1>
+    <h1>Coś poszło nie tak</h1>
     <p>Status: <span th:text="${status}">500</span></p>
-    <p th:text="${message}">Unexpected error.</p>
-    <a th:href="@{/ingredients}">Back to ingredients</a>
+    <p th:text="${message}">Wystąpił nieoczekiwany błąd.</p>
+    <a class="cta-link" th:href="@{/ingredients}">Wróć do składników</a>
 </section>
 </html>
 

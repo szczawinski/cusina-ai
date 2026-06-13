@@ -1,5 +1,9 @@
 # Maven/Java build output
 /target/
+/build/
+*.class
+*.jar
+.gradle/
 
 # IDE
 /.idea/
@@ -17,4 +21,9 @@ Thumbs.db
 # Env and secrets
 .env
 .env.*
+
+# Logs and temp
+*.log
+*.tmp
+*.swp
 

@@ -1,29 +1,30 @@
 package com.cusina.ai.model;
 
-import jakarta.validation.Validation;
-import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class MealRequestValidationTest {
 
-    private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
-
     @Test
-    void shouldRejectDietaryPreferencesLongerThan500Chars() {
+    void shouldDefaultLocaleToPolish() {
         MealRequest request = new MealRequest();
-        request.setDietaryPreferences("x".repeat(501));
 
-        assertThat(validator.validate(request)).isNotEmpty();
+        assertThat(request.getLocale()).isEqualTo("pl-PL");
     }
 
     @Test
-    void shouldAcceptBlankDietaryPreferences() {
+    void shouldAllowSettingIngredientsAndPreferences() {
         MealRequest request = new MealRequest();
-        request.setDietaryPreferences("");
+        request.setIngredients(java.util.List.of("Jajka", "Ser"));
+        request.setDietaryPreferences("Bez glutenu");
+        request.setDishType(DishType.LUNCHE);
+        request.setDietType(DietType.WEGETARIAŃSKIE);
 
-        assertThat(validator.validate(request)).isEmpty();
+        assertThat(request.getIngredients()).containsExactly("Jajka", "Ser");
+        assertThat(request.getDietaryPreferences()).isEqualTo("Bez glutenu");
+        assertThat(request.getDishType()).isEqualTo(DishType.LUNCHE);
+        assertThat(request.getDietType()).isEqualTo(DietType.WEGETARIAŃSKIE);
     }
 }
 

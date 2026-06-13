@@ -1,6 +1,6 @@
 # Implementation Plan: Cusina AI — Meal Suggestion Web Application
 
-**Branch**: `001-meal-suggestion-webapp` | **Date**: 2025-07-22 | **Spec**: [spec.md](./spec.md)
+**Branch**: `001-meal-suggestion-webapp` | **Date**: 2026-06-13 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `/specs/001-meal-suggestion-webapp/spec.md`
 
@@ -8,152 +8,106 @@
 
 ## Summary
 
-Build **Cusina AI**, a Spring Boot 3 / Thymeleaf web application that lets home cooks manage a session-scoped ingredient list and submit it to the Anthropic Claude API to receive structured meal suggestions. The app is packaged as a self-contained JAR with no external database; all state lives in the HTTP session. The Claude API is called via the official `anthropic-java` SDK with an `@Async` wrapper to avoid exhausting servlet threads on the 10–15 s AI response window. Meal suggestions are returned as JSON (system-prompt-guided), deserialized with Jackson, and validated so that: (1) a successful response must contain exactly 3 suggestions, and (2) malformed suggestions are omitted with a visible warning.
+Plan covers a server-rendered web app (Java 21, Spring Boot 3, Thymeleaf, Maven) that generates meal suggestions from ingredients using Anthropic Claude API, with three clarified business anchors: (1) session starts with exactly 10 random unique ingredients, (2) request form exposes exactly 2 comboboxes with closed canonical options, and (3) a suggestion is valid even if it uses only a subset of provided ingredients.
 
 ---
 
 ## Technical Context
 
-**Language/Version**: Java 21
-*(Updated 2026-06-12: Aligned to spec.md user intent; supports future virtual threads; requires Spring Boot 3.3+ compatibility)*
+**Language/Version**: Java 21  
+**Primary Dependencies**: Spring Boot MVC + Thymeleaf + Validation, anthropic-java client, JUnit 5/Mockito  
+**Storage**: HTTP session only (no DB)  
+**Testing**: WebMvc tests, service tests, manual viewport checks (320–430 px)  
+**Target Platform**: Local JAR + containerized runtime (Cloud Run compatible)  
+**Project Type**: Server-rendered web application
 
-**Primary Dependencies**:
-- Spring Boot 3.3.x (Spring MVC, Spring Session — in-memory, Thymeleaf starter, Validation starter)
-- `com.anthropic:anthropic-java:2.40.1` — official Anthropic Java SDK (OkHttp transport, no WebFlux required)
-- Jackson 2.18.x (managed by Spring Boot BOM; used for AI response deserialization)
-- Thymeleaf 3.1 (template engine for server-rendered HTML)
-- Spring Boot DevTools (dev-time only)
-- JUnit 5 + Mockito (testing; included via `spring-boot-starter-test`)
+**Functional constraints**:
+- Session bootstrap must preload exactly 10 random unique ingredients.
+- Ingredient list max 50, deduplicated case-insensitive (first value wins).
+- Meal request has optional free-text preferences (max 500 chars).
+- Two optional comboboxes with strict closed values:
+  - dishType: `śniadanie | obiad | deser`
+  - dietType: `lekka | śródziemnomorska | wegetariańska`
+- Out-of-list combobox values are rejected server-side and must not trigger AI call.
+- Successful AI payload must contain exactly 3 raw suggestions.
+- Malformed suggestions are dropped; valid ones shown with warning.
+- Suggestion validity allows non-empty subset usage of available ingredients.
+- UI and presented content remain Polish-only.
 
-**Storage**: HTTP session only (`@SessionScope` Spring bean); no database
-
-**Testing**: JUnit 5 (`@SpringBootTest`, `@WebMvcTest`), Mockito for service mocking
-
-**Target Platform**: JVM — runs as `java -jar cusina-ai.jar`; single-server or local deploy
-
-**Project Type**: Web application (Spring Boot MVC + Thymeleaf, server-rendered, no SPA frontend)
-
-**Performance Goals**:
-- Ingredient add/remove feedback: < 1 s (pure server-rendered form post + redirect)
-- Meal suggestion response: ≤ 15 s under typical API latency (Claude Haiku 4.5)
-
-**Constraints**:
-- Max 50 ingredients per session (enforced server-side)
-- Dietary preference input capped at 500 characters
-- API key never reaches the browser; loaded from `ANTHROPIC_API_KEY` env var
-- Responsive layout down to 320 px (no horizontal scrolling)
-- AI response is considered successful only when raw suggestion count is exactly 3; non-3 count is an error with retry messaging
-
-**Scale/Scope**: Single-server; v1; concurrent-user load testing out of scope
+**NEEDS CLARIFICATION**: None
 
 ---
 
 ## Constitution Check
 
-*The project constitution is unpopulated (template-only). No gates apply. The following standard quality checks are applied.*
+Constitution file exists but remains template-only with no enforceable project principles. No constitutional blockers identified.
 
 | Check | Status | Notes |
 |-------|--------|-------|
-| Stack alignment with spec | ✅ PASS | Java 21, Spring Boot 3, Thymeleaf, Maven, Jackson, Anthropic Claude — all per spec |
-| No unnecessary external persistence | ✅ PASS | Session-only; no DB dependency added |
-| API key security | ✅ PASS | Read from env var; fail-fast on missing key at startup |
-| Single project structure (no over-engineering) | ✅ PASS | One Maven module; no microservices |
-| Responsive UI requirement covered | ✅ PASS | Mobile-first CSS with warm food palette |
-| Error handling for AI failures | ✅ PASS | Graceful fallback page; no stack traces exposed |
+| Placeholder constitution has no enforceable gates | ✅ PASS | Planning gates applied from feature spec |
+| Clarified startup ingredients rule represented | ✅ PASS | Exact random 10 included |
+| Clarified combobox domains represented | ✅ PASS | Two closed enums included |
+| Clarified subset-ingredient validity represented | ✅ PASS | Included in validation model |
 
 ---
 
 ## Project Structure
 
-### Documentation (this feature)
-
 ```text
 specs/001-meal-suggestion-webapp/
-├── plan.md              # This file
-├── research.md          # Phase 0 output — tech decisions and rationale
-├── data-model.md        # Phase 1 output — entity definitions and state model
-├── quickstart.md        # Phase 1 output — validation/run guide
+├── plan.md
+├── research.md
+├── data-model.md
+├── quickstart.md
 ├── contracts/
-│   └── http-routes.md   # Phase 1 output — Spring MVC routes and view contracts
-└── tasks.md             # Phase 2 output (generated by /speckit.tasks — NOT by /speckit.plan)
+│   └── http-routes.md
+└── tasks.md
 ```
-
-### Source Code (repository root)
 
 ```text
-cusina-ai/                              # Repository root
-├── pom.xml                             # Maven build; Spring Boot parent BOM
-│
-├── src/
-│   ├── main/
-│   │   ├── java/com/cusina/ai/
-│   │   │   ├── CusinaAiApplication.java          # @SpringBootApplication entry point
-│   │   │   │
-│   │   │   ├── config/
-│   │   │   │   ├── AnthropicConfig.java           # @Bean for AnthropicClient (singleton)
-│   │   │   │   ├── AsyncConfig.java               # @EnableAsync + ThreadPoolTaskExecutor
-│   │   │   │   └── AppStartupValidator.java       # Fail-fast on missing ANTHROPIC_API_KEY
-│   │   │   │
-│   │   │   ├── controller/
-│   │   │   │   ├── IngredientController.java      # GET/POST /ingredients
-│   │   │   │   └── MealController.java            # GET /meal-request, POST /meal-request/suggest
-│   │   │   │
-│   │   │   ├── model/
-│   │   │   │   ├── Ingredient.java                # Value object: name (trimmed, lowercase key)
-│   │   │   │   ├── MealRequest.java               # Form-backing object: dietaryPreferences
-│   │   │   │   ├── MealSuggestion.java            # AI response unit: name, description, steps
-│   │   │   │   └── MealResponse.java              # Wrapper: List<MealSuggestion>
-│   │   │   │
-│   │   │   ├── service/
-│   │   │   │   └── MealSuggestionService.java     # @Async Claude API call; prompt builder; JSON parse
-│   │   │   │
-│   │   │   └── session/
-│   │   │       └── IngredientSession.java         # @SessionScope bean: ingredient list + CRUD
-│   │   │
-│   │   └── resources/
-│   │       ├── application.properties             # Server port, timeout, logging
-│   │       ├── templates/
-│   │       │   ├── fragments/
-│   │       │   │   └── layout.html                # Base HTML shell (head, nav, footer)
-│   │       │   ├── ingredients.html               # Ingredient management screen
-│   │       │   ├── meal-request.html              # Dietary preferences + submit screen
-│   │       │   ├── results.html                   # Meal suggestions display screen
-│   │       │   └── error.html                     # User-friendly error page
-│   │       └── static/
-│   │           └── css/
-│   │               └── style.css                  # Warm food palette; responsive grid
-│   │
-│   └── test/
-│       └── java/com/cusina/ai/
-│           ├── controller/
-│           │   ├── IngredientControllerTest.java  # @WebMvcTest — add/remove/empty-state flows
-│           │   └── MealControllerTest.java        # @WebMvcTest — request form; result rendering
-│           ├── service/
-│           │   └── MealSuggestionServiceTest.java # Unit — prompt building; JSON parse; error paths
-│           └── session/
-│               └── IngredientSessionTest.java     # Unit — deduplication; 50-item cap; remove
-│
-└── specs/
-    └── 001-meal-suggestion-webapp/                # This feature's spec kit artifacts
+src/main/java/com/cusina/ai/
+├── controller/
+├── model/
+├── service/
+├── session/
+└── config/
+
+src/main/resources/
+├── templates/
+└── static/css/
 ```
 
-**Structure Decision**: Single Maven module (Option 1 — server-rendered web app). No separate frontend project is warranted because Thymeleaf templates are server-side; CSS lives in `src/main/resources/static`. The `session/` sub-package isolates the HTTP-session state to avoid polluting controllers with `HttpSession` raw access.
+---
+
+## Phase 0 Output (Research)
+
+`research.md` resolves implementation decisions for:
+1. deterministic handling of 10-random-ingredient bootstrap,
+2. strict validation strategy for 2 closed-list comboboxes,
+3. subset-ingredient acceptance in results validation,
+4. exact-3 and malformed-item handling policy.
+
+---
+
+## Phase 1 Outputs (Design & Contracts)
+
+- `data-model.md`: updated entities/validation for startup preload, combobox enums, subset usage.
+- `contracts/http-routes.md`: updated request/validation and route contracts.
+- `quickstart.md`: updated validation scenarios and test commands.
+- `.github/copilot-instructions.md`: plan reference verified between markers.
 
 ---
 
 ## Post-Design Constitution Check
 
-*Constitution remains template-only. Re-check after Phase 1 artifacts completed.*
-
 | Check | Status | Notes |
 |-------|--------|-------|
-| Phase 0 unknowns resolved | ✅ PASS | `research.md` resolves all planning unknowns |
-| Data model aligned to clarified spec | ✅ PASS | `data-model.md` enforces exact-3 validation and malformed omission warning |
-| Contract alignment | ✅ PASS | `contracts/http-routes.md` defines exact-3 error handling and warning rendering |
-| Validation guide coverage | ✅ PASS | `quickstart.md` includes malformed and invalid-count scenarios |
+| All clarifications mapped into design artifacts | ✅ PASS | Startup preload, combobox constraints, subset validity included |
+| No unresolved unknowns | ✅ PASS | Research closed all decisions |
+| Contract and data model alignment | ✅ PASS | Same enums/rules in both artifacts |
 
 ---
 
 ## Complexity Tracking
 
-> No constitution violations detected. Table omitted.
+No constitution violations and no exceptions required.

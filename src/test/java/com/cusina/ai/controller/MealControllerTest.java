@@ -19,10 +19,12 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -58,7 +60,8 @@ class MealControllerTest {
 
         mockMvc.perform(get("/meal-request"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/ingredients"));
+                .andExpect(redirectedUrl("/ingredients"))
+                .andExpect(flash().attribute("errorMessage", "Najpierw dodaj co najmniej jeden składnik."));
     }
 
     @Test
@@ -69,7 +72,7 @@ class MealControllerTest {
         mockMvc.perform(get("/meal-request"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("meal-request"))
-                .andExpect(model().attributeExists("mealRequest", "ingredients", "charLimit"));
+                .andExpect(model().attributeExists("mealRequest", "ingredients", "charLimit", "dishTypes", "dietTypes"));
     }
 
     @Test
@@ -79,7 +82,8 @@ class MealControllerTest {
 
         mockMvc.perform(post("/meal-request/suggest").param("dietaryPreferences", "x".repeat(501)))
                 .andExpect(status().isOk())
-                .andExpect(view().name("meal-request"));
+                .andExpect(view().name("meal-request"))
+                .andExpect(model().attributeHasFieldErrors("mealRequest", "dietaryPreferences"));
     }
 
     @Test
@@ -88,16 +92,49 @@ class MealControllerTest {
         meal.setName("Omelette");
         meal.setDescription("desc");
         meal.setSteps(List.of("step"));
+        meal.setUsedIngredients(List.of("Eggs"));
         MealResponse response = new MealResponse();
+        response.setRawCount(3);
         response.setMeals(List.of(meal));
 
         when(ingredientSession.isEmpty()).thenReturn(false);
         when(ingredientSession.getIngredientNames()).thenReturn(List.of("Eggs"));
-        when(mealSuggestionService.suggest(any(), anyString())).thenReturn(CompletableFuture.completedFuture(response));
+        when(mealSuggestionService.suggest(any())).thenReturn(CompletableFuture.completedFuture(response));
 
-        mockMvc.perform(post("/meal-request/suggest").param("dietaryPreferences", "vegetarian"))
+        mockMvc.perform(post("/meal-request/suggest")
+                        .param("dietaryPreferences", "wegetariańskie")
+                        .param("dishType", "obiad")
+                        .param("dietType", "wegetariańska"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/results"));
+                .andExpect(redirectedUrl("/results"))
+                .andExpect(flash().attributeExists("mealResponse"));
+    }
+
+    @Test
+    void shouldRejectTamperedComboboxValueWithoutAiCall() throws Exception {
+        when(ingredientSession.isEmpty()).thenReturn(false);
+        when(ingredientSession.getIngredients()).thenReturn(List.of(new Ingredient("Eggs")));
+
+        mockMvc.perform(post("/meal-request/suggest")
+                        .param("dietaryPreferences", "")
+                        .param("dishType", "kolacja")
+                        .param("dietType", "lekka"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("meal-request"))
+                .andExpect(model().attributeHasFieldErrors("mealRequest", "dishType"));
+
+        verify(mealSuggestionService, never()).suggest(any());
+    }
+
+    @Test
+    void shouldRenderResultsWhenFlashMealResponseIsProvided() throws Exception {
+        MealResponse response = new MealResponse();
+        response.setRawCount(3);
+        response.setMeals(List.of());
+
+        mockMvc.perform(get("/results").flashAttr("mealResponse", response))
+                .andExpect(status().isOk())
+                .andExpect(view().name("results"));
     }
 
     @Test

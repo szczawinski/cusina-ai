@@ -1,7 +1,6 @@
 package com.cusina.ai.session;
 
 import com.cusina.ai.model.Ingredient;
-import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.SessionScope;
 
@@ -18,36 +17,27 @@ public class IngredientSession implements Serializable {
     public enum AddResult { ADDED, DUPLICATE, FULL, INVALID }
 
     private static final int MAX_INGREDIENTS = 50;
+    private static final int PRELOAD_COUNT = 10;
 
-    private final transient IngredientFileRepository ingredientFileRepository;
+    private final transient IngredientPool ingredientPool;
     private final Map<String, Ingredient> ingredientsByKey = new LinkedHashMap<>();
+    private boolean initialized;
 
-    public IngredientSession(IngredientFileRepository ingredientFileRepository) {
-        this.ingredientFileRepository = ingredientFileRepository;
-        loadFromFile();
+    public IngredientSession(IngredientPool ingredientPool) {
+        this.ingredientPool = ingredientPool;
     }
 
-    private void loadFromFile() {
-        List<String> storedNames = ingredientFileRepository.loadIngredientNames();
-        if (storedNames == null) {
+    public void initializeIfNeeded() {
+        if (initialized) {
             return;
         }
 
-        for (String storedName : storedNames) {
-            if (ingredientsByKey.size() >= MAX_INGREDIENTS) {
-                break;
-            }
-            try {
-                Ingredient ingredient = new Ingredient(storedName);
-                ingredientsByKey.putIfAbsent(ingredient.normalizedKey(), ingredient);
-            } catch (IllegalArgumentException ignored) {
-                // Skip malformed persisted entries and continue loading the rest.
-            }
+        List<String> preloaded = ingredientPool.drawUnique(PRELOAD_COUNT);
+        for (String name : preloaded) {
+            Ingredient ingredient = Ingredient.preloaded(name);
+            ingredientsByKey.putIfAbsent(ingredient.normalizedKey(), ingredient);
         }
-    }
-
-    private void persistToFile() {
-        ingredientFileRepository.saveIngredientNames(getIngredientNames());
+        initialized = true;
     }
 
     public AddResult addIngredient(String rawName) {
@@ -59,7 +49,7 @@ public class IngredientSession implements Serializable {
         }
         Ingredient ingredient;
         try {
-            ingredient = new Ingredient(rawName);
+            ingredient = Ingredient.userAdded(rawName);
         } catch (IllegalArgumentException ex) {
             return AddResult.INVALID;
         }
@@ -68,18 +58,18 @@ public class IngredientSession implements Serializable {
             return AddResult.DUPLICATE;
         }
         ingredientsByKey.put(key, ingredient);
-        persistToFile();
         return AddResult.ADDED;
     }
 
     public void removeIngredient(String normalizedKey) {
+        removeIngredientAndReport(normalizedKey);
+    }
+
+    public boolean removeIngredientAndReport(String normalizedKey) {
         if (normalizedKey == null) {
-            return;
+            return false;
         }
-        Ingredient removed = ingredientsByKey.remove(normalizedKey.trim().toLowerCase());
-        if (removed != null) {
-            persistToFile();
-        }
+        return ingredientsByKey.remove(normalizedKey.trim().toLowerCase()) != null;
     }
 
     public List<Ingredient> getIngredients() {
@@ -103,16 +93,8 @@ public class IngredientSession implements Serializable {
     }
 
     public void clear() {
-        if (ingredientsByKey.isEmpty()) {
-            return;
-        }
         ingredientsByKey.clear();
-        persistToFile();
-    }
-
-    @PreDestroy
-    public void onDestroy() {
-        persistToFile();
+        initialized = false;
     }
 }
 

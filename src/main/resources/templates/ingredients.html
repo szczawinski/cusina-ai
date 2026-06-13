@@ -1,28 +1,32 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{fragments/layout :: page('My Ingredients', ~{::section})}">
+<html lang="pl" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Twoje składniki', ~{::section})}">
 <section>
-    <h1>My Ingredients</h1>
-
-    <div th:if="${successMessage}" class="flash-success" th:text="${successMessage}"></div>
-    <div th:if="${errorMessage}" class="flash-error" th:text="${errorMessage}"></div>
+    <h1>Twoje składniki</h1>
 
     <div class="card">
-        <p><strong th:text="${#lists.size(ingredients)} + ' / 50'"></strong></p>
+        <p class="meta"><strong th:text="${#lists.size(ingredients)} + ' / 50'"></strong> składników</p>
+        <p class="meta">Nowa sesja startuje z <strong th:text="${preloadedCount}">10</strong> losowymi składnikami.</p>
         <form th:action="@{/ingredients/add}" method="post" th:object="${addForm}">
-            <input type="text" th:field="*{name}" placeholder="e.g. Chicken breast"/>
-            <button type="submit" th:disabled="${isFull}">Add Ingredient</button>
+            <label for="name">Dodaj składnik</label>
+            <input id="name" type="text" th:field="*{name}" placeholder="np. pierś z kurczaka"/>
+            <button type="submit" th:disabled="${isFull}">Dodaj składnik</button>
         </form>
-        <p th:if="${#lists.isEmpty(ingredients)}">Add ingredients from your fridge or pantry to get started.</p>
+        <p th:if="${#lists.isEmpty(ingredients)}" class="empty-state">Dodaj składniki z lodówki lub spiżarni, aby otrzymać sugestie dań.</p>
 
-        <div th:each="ingredient : ${ingredients}" class="list-row">
-            <span th:text="${ingredient.displayName}"></span>
+        <div th:each="ingredient : ${ingredients}" class="list-row ingredient-row">
+            <div>
+                <span class="ingredient-name" th:text="${ingredient.displayName}"></span>
+                <small class="meta" th:if="${ingredient.source.name() == 'PRELOADED'}">• startowe</small>
+            </div>
             <form th:action="@{/ingredients/remove}" method="post">
                 <input type="hidden" name="normalizedKey" th:value="${ingredient.normalizedKey}"/>
-                <button type="submit">Remove</button>
+                <button type="submit" class="secondary">Usuń</button>
             </form>
         </div>
     </div>
+
+    <a class="cta-link" th:href="@{/meal-request}" th:if="${!#lists.isEmpty(ingredients)}">Przejdź do sugerowania dań</a>
 </section>
 </html>
 

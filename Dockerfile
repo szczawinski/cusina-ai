@@ -16,7 +16,9 @@ COPY --from=build /app/target/cusina-ai-0.0.1-SNAPSHOT.jar app.jar
 
 EXPOSE 8080
 
-# Keep Anthropic as default provider; override via env/args when needed.
 ENV AI_PROVIDER=anthropic
+ENV PORT=8080
+ENV SPRING_PROFILES_ACTIVE=cloud
 
-ENTRYPOINT ["sh", "-c", "if [ \"${AI_PROVIDER:-anthropic}\" = \"anthropic\" ] && [ -z \"$ANTHROPIC_API_KEY\" ]; then echo 'ERROR: ANTHROPIC_API_KEY is required when AI_PROVIDER=anthropic' >&2; exit 1; fi; exec java -jar /app/app.jar"]
+ENTRYPOINT ["sh", "-c", "if [ \"$AI_PROVIDER\" = \"anthropic\" ] && [ -z \"$ANTHROPIC_API_KEY\" ]; then echo 'ANTHROPIC_API_KEY is required when AI_PROVIDER=anthropic' >&2; exit 1; fi; exec java -jar /app/app.jar"]
+

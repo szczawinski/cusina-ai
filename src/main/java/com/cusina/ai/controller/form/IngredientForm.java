@@ -5,8 +5,8 @@ import jakarta.validation.constraints.Size;
 
 public class IngredientForm {
 
-    @NotBlank(message = "Ingredient name cannot be empty.")
-    @Size(max = 100, message = "Ingredient name must be 100 characters or fewer.")
+    @NotBlank(message = "{ingredient.name.notBlank}")
+    @Size(max = 100, message = "{ingredient.name.size}")
     private String name;
 
     public String getName() {

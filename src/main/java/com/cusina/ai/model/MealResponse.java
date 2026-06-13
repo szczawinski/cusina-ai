@@ -5,24 +5,33 @@ import java.util.List;
 
 public class MealResponse {
 
+    private int rawCount;
     private List<MealSuggestion> meals = new ArrayList<>();
     private int omittedMalformedCount;
-    private String warning;
-    private String error;
+    private String warningPl;
+    private String errorPl;
 
     public static MealResponse error(String message) {
         MealResponse response = new MealResponse();
-        response.setError(message);
+        response.setErrorPl(message);
         return response;
     }
 
     public boolean hasError() {
-        return error != null && !error.isBlank();
+        return errorPl != null && !errorPl.isBlank();
     }
 
     public boolean hasWarning() {
-        return warning != null && !warning.isBlank();
+        return warningPl != null && !warningPl.isBlank();
     }
+    public int getRawCount() {
+        return rawCount;
+    }
+
+    public void setRawCount(int rawCount) {
+        this.rawCount = rawCount;
+    }
+
 
     public boolean hasMeals() {
         return meals != null && !meals.isEmpty();
@@ -36,6 +45,10 @@ public class MealResponse {
         this.meals = meals;
     }
 
+    public List<MealSuggestion> getValidSuggestions() {
+        return meals;
+    }
+
     public int getOmittedMalformedCount() {
         return omittedMalformedCount;
     }
@@ -44,20 +57,20 @@ public class MealResponse {
         this.omittedMalformedCount = omittedMalformedCount;
     }
 
-    public String getWarning() {
-        return warning;
+    public String getWarningPl() {
+        return warningPl;
     }
 
-    public void setWarning(String warning) {
-        this.warning = warning;
+    public void setWarningPl(String warningPl) {
+        this.warningPl = warningPl;
     }
 
-    public String getError() {
-        return error;
+    public String getErrorPl() {
+        return errorPl;
     }
 
-    public void setError(String error) {
-        this.error = error;
+    public void setErrorPl(String errorPl) {
+        this.errorPl = errorPl;
     }
 }
 

@@ -1,7 +1,7 @@
 # Specification Quality Checklist: Cusina AI — Meal Suggestion Web Application
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
-**Created**: 2025-07-22
+**Created**: 2026-06-13
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
@@ -32,7 +32,5 @@
 ## Notes
 
 - All items pass. Spec is ready for `/speckit.clarify` or `/speckit.plan`.
-- The spec intentionally omits technology choices (Java, Spring Boot, Thymeleaf, Maven) in keeping
-  with technology-agnostic specification practice; those details belong in the plan.
-- The 3-minute end-to-end flow target (SC-002) and 15-second AI response target (SC-003) are
-  realistic baselines given Anthropic Claude API typical response times.
+- Added explicit Polish-language coverage in scenarios, FRs, SCs, and edge cases.
+- Added explicit premium minimalist style and iPhone Safari 320-430 px quality criteria with measurable acceptance outcomes.

@@ -3,10 +3,20 @@ package com.cusina.ai.model;
 import java.util.Locale;
 import java.util.Objects;
 
-public record Ingredient(String displayName) {
+public record Ingredient(String displayName, Source source) {
+
+    public enum Source {
+        PRELOADED,
+        USER_ADDED
+    }
+
+    public Ingredient(String displayName) {
+        this(displayName, Source.USER_ADDED);
+    }
 
     public Ingredient {
         Objects.requireNonNull(displayName, "displayName");
+        Objects.requireNonNull(source, "source");
         displayName = displayName.trim();
         if (displayName.isBlank()) {
             throw new IllegalArgumentException("Ingredient name cannot be blank");
@@ -18,6 +28,14 @@ public record Ingredient(String displayName) {
 
     public String normalizedKey() {
         return displayName.trim().toLowerCase(Locale.ROOT);
+    }
+
+    public static Ingredient preloaded(String displayName) {
+        return new Ingredient(displayName, Source.PRELOADED);
+    }
+
+    public static Ingredient userAdded(String displayName) {
+        return new Ingredient(displayName, Source.USER_ADDED);
     }
 }
 
