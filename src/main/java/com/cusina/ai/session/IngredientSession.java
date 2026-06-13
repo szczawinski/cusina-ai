@@ -1,6 +1,7 @@
 package com.cusina.ai.session;
 
 import com.cusina.ai.model.Ingredient;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -31,8 +32,16 @@ public class IngredientSession implements Serializable {
     @Autowired
     public IngredientSession(IngredientPool ingredientPool,
                              IngredientPersistenceService persistenceService,
-                             HttpSession httpSession) {
-        this(ingredientPool, persistenceService, "session:" + httpSession.getId());
+                             HttpSession httpSession,
+                             HttpServletRequest request) {
+        this(ingredientPool, persistenceService, resolveSessionKey(request.getRequestedSessionId(), httpSession.getId()));
+    }
+
+    static String resolveSessionKey(String requestedSessionId, String currentSessionId) {
+        String sessionId = (requestedSessionId != null && !requestedSessionId.isBlank())
+                ? requestedSessionId.trim()
+                : currentSessionId;
+        return "session:" + sessionId;
     }
 
     IngredientSession(IngredientPool ingredientPool,
@@ -148,4 +157,3 @@ public class IngredientSession implements Serializable {
         persistenceService.save(sessionKey, new PersistedIngredientSession(initialized, getIngredientNames()));
     }
 }
-

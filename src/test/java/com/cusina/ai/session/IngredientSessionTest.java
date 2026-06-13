@@ -86,5 +86,18 @@ class IngredientSessionTest {
         assertThat(session.getIngredientNames()).containsExactly("Pomidor", "Cebula");
         verify(persistenceService).load("session:test");
     }
-}
 
+    @Test
+    void shouldPreferRequestedSessionIdForPersistenceKey() {
+        String key = IngredientSession.resolveSessionKey("old-session-id", "new-session-id");
+
+        assertThat(key).isEqualTo("session:old-session-id");
+    }
+
+    @Test
+    void shouldFallbackToCurrentSessionIdWhenRequestedIsBlank() {
+        String key = IngredientSession.resolveSessionKey("  ", "new-session-id");
+
+        assertThat(key).isEqualTo("session:new-session-id");
+    }
+}
