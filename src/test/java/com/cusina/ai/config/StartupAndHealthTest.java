@@ -33,5 +33,13 @@ class StartupAndHealthTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).contains("UP");
     }
+
+    @Test
+    void shouldRenderIngredientsPageWithoutServerError() {
+        ResponseEntity<String> response = restTemplate.getForEntity("/ingredients", String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).doesNotContain("Status: 500");
+    }
 }
 

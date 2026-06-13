@@ -2,6 +2,7 @@ package com.cusina.ai.session;
 
 import com.cusina.ai.model.Ingredient;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.annotation.SessionScope;
 
@@ -27,6 +28,7 @@ public class IngredientSession implements Serializable {
     private boolean initialized;
     private boolean stateLoaded;
 
+    @Autowired
     public IngredientSession(IngredientPool ingredientPool,
                              IngredientPersistenceService persistenceService,
                              HttpSession httpSession) {
