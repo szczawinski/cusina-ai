@@ -145,7 +145,8 @@ public class MealSuggestionService {
         }
 
         List<MealSuggestion> validMeals = new ArrayList<>();
-        int omitted = 0;
+        int omittedMissingData = 0;
+        int omittedOutOfScope = 0;
 
         for (int index = 0; index < rawResponse.getMeals().size(); index++) {
             MealSuggestion meal = rawResponse.getMeals().get(index);
@@ -156,14 +157,22 @@ public class MealSuggestionService {
                 validMeals.add(meal);
             } else {
                 logger.warn("Pominięto sugestię AI #{}: {}", index + 1, describeRejectionReason(meal, availableIngredients));
-                omitted++;
+                if (meal == null || !meal.isValid()) {
+                    omittedMissingData++;
+                } else {
+                    omittedOutOfScope++;
+                }
             }
         }
+
+        int omitted = omittedMissingData + omittedOutOfScope;
 
         MealResponse response = new MealResponse();
         response.setRawCount(rawResponse.getRawCount());
         response.setMeals(validMeals);
         response.setOmittedMalformedCount(omitted);
+        response.setOmittedMissingDataCount(omittedMissingData);
+        response.setOmittedOutOfScopeCount(omittedOutOfScope);
         if (omitted > 0) {
             response.setWarningPl("Część sugestii pominięto, ponieważ miały niepełne dane lub wskazywały składniki spoza Twojej listy.");
             logger.info("Walidacja sugestii AI zakończona: {} poprawnych, {} pominiętych.", validMeals.size(), omitted);

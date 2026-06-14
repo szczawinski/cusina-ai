@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Wybrany przepis', ~{::section})}">
+<section>
+    <h1>Wybrany przepis</h1>
+
+    <article class="card meal-detail-card">
+        <h2 th:text="${selectedMeal.name}"></h2>
+        <p th:text="${selectedMeal.description}"></p>
+
+        <div th:if="${selectedMeal.usedIngredients != null and !selectedMeal.usedIngredients.isEmpty()}">
+            <h3>Składniki użyte w propozycji</h3>
+            <ul>
+                <li th:each="ingredient : ${selectedMeal.usedIngredients}" th:text="${ingredient}"></li>
+            </ul>
+        </div>
+
+        <h3>Szczegółowe kroki przygotowania</h3>
+        <ol>
+            <li th:each="step : ${selectedMeal.steps}" th:text="${step}"></li>
+        </ol>
+    </article>
+
+    <div class="actions-row">
+        <a class="cta-link" th:href="@{/meal-history}">Zobacz historię wyborów</a>
+        <a class="cta-link" th:href="@{/results}">Wróć do sugestii</a>
+        <a class="cta-link" th:href="@{/meal-request}">Nowe zapytanie</a>
+    </div>
+</section>
+</html>
+

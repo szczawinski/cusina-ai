@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: page('Historia wybranych dań', ~{::section})}">
+<section>
+    <h1>Historia wybranych dań</h1>
+
+    <div class="card history-summary-card">
+        <p>Łącznie wybranych dań: <strong th:text="${selectionCount}"></strong></p>
+        <p>Unikalnych przepisów: <strong th:text="${uniqueMealCount}"></strong></p>
+    </div>
+
+    <div th:if="${mealHistory.isEmpty()}" class="card">
+        <p class="empty-state">Nie wybrano jeszcze żadnego dania. Wróć do wyników i kliknij „Wybierz”.</p>
+    </div>
+
+    <div th:unless="${mealHistory.isEmpty()}" class="results-grid">
+        <article class="card meal-card" th:each="meal : ${mealHistory}">
+            <h2 th:text="${meal.name}"></h2>
+            <p th:text="${meal.description}"></p>
+            <p class="meta">Liczba kroków: <span th:text="${meal.steps != null ? meal.steps.size() : 0}"></span></p>
+            <p class="meta" th:if="${meal.usedIngredients != null and !meal.usedIngredients.isEmpty()}">
+                Użyte składniki: <span th:text="${#strings.listJoin(meal.usedIngredients, ', ')}"></span>
+            </p>
+        </article>
+    </div>
+
+    <div class="actions-row">
+        <a class="cta-link" th:href="@{/results}">Wróć do sugestii</a>
+        <a class="cta-link" th:href="@{/meal-request}">Nowe zapytanie</a>
+    </div>
+</section>
+</html>
+

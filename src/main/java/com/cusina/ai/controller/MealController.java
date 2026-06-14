@@ -8,6 +8,7 @@ import com.cusina.ai.model.MealRequest;
 import com.cusina.ai.model.MealResponse;
 import com.cusina.ai.service.MealSuggestionService;
 import com.cusina.ai.session.IngredientSession;
+import com.cusina.ai.session.MealSelectionSession;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,8 +16,10 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -27,13 +30,16 @@ public class MealController {
     private final IngredientSession ingredientSession;
     private final MealSuggestionService mealSuggestionService;
     private final AnthropicProperties anthropicProperties;
+    private final MealSelectionSession mealSelectionSession;
 
     public MealController(IngredientSession ingredientSession,
                           MealSuggestionService mealSuggestionService,
-                          AnthropicProperties anthropicProperties) {
+                          AnthropicProperties anthropicProperties,
+                          MealSelectionSession mealSelectionSession) {
         this.ingredientSession = ingredientSession;
         this.mealSuggestionService = mealSuggestionService;
         this.anthropicProperties = anthropicProperties;
+        this.mealSelectionSession = mealSelectionSession;
     }
 
     @GetMapping("/meal-request")
@@ -93,15 +99,66 @@ public class MealController {
             response = MealResponse.error("Żądanie zostało przerwane. Spróbuj ponownie.");
         }
 
+        if (response.hasError()) {
+            mealSelectionSession.updateLatestSuggestions(List.of());
+        } else {
+            mealSelectionSession.updateLatestSuggestions(response.getMeals());
+        }
+
         redirectAttributes.addFlashAttribute("mealResponse", response);
         return "redirect:/results";
     }
 
     @GetMapping("/results")
     public String showResults(Model model) {
-        if (!model.containsAttribute("mealResponse")) {
+        if (model.containsAttribute("mealResponse")) {
+            MealResponse response = (MealResponse) model.getAttribute("mealResponse");
+            if (response != null && !response.hasError()) {
+                mealSelectionSession.updateLatestSuggestions(response.getMeals());
+            }
+            return "results";
+        }
+
+        if (!mealSelectionSession.hasLatestSuggestions()) {
             return "redirect:/meal-request";
         }
+
+        MealResponse fallback = new MealResponse();
+        fallback.setRawCount(mealSelectionSession.getLatestSuggestions().size());
+        fallback.setMeals(mealSelectionSession.getLatestSuggestions());
+        model.addAttribute("mealResponse", fallback);
         return "results";
+    }
+
+    @PostMapping("/results/select")
+    public String selectMeal(@RequestParam("index") int index, RedirectAttributes redirectAttributes) {
+        if (mealSelectionSession.selectFromLatest(index).isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Nie udało się wybrać przepisu. Spróbuj ponownie.");
+            return "redirect:/results";
+        }
+
+        redirectAttributes.addFlashAttribute("successMessage", "Przepis został dodany do historii.");
+        return "redirect:/meal-selected";
+    }
+
+    @GetMapping("/meal-selected")
+    public String showSelectedMeal(Model model, RedirectAttributes redirectAttributes) {
+        return mealSelectionSession.getSelectedMeal()
+                .map(selected -> {
+                    model.addAttribute("selectedMeal", selected);
+                    return "meal-selected";
+                })
+                .orElseGet(() -> {
+                    redirectAttributes.addFlashAttribute("errorMessage", "Najpierw wybierz przepis z listy sugestii.");
+                    return "redirect:/results";
+                });
+    }
+
+    @GetMapping("/meal-history")
+    public String showMealHistory(Model model) {
+        model.addAttribute("mealHistory", mealSelectionSession.getSelectedMealsHistory());
+        model.addAttribute("selectionCount", mealSelectionSession.getSelectionCount());
+        model.addAttribute("uniqueMealCount", mealSelectionSession.getUniqueMealCount());
+        return "meal-history";
     }
 }

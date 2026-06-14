@@ -8,6 +8,8 @@ public class MealResponse {
     private int rawCount;
     private List<MealSuggestion> meals = new ArrayList<>();
     private int omittedMalformedCount;
+    private int omittedMissingDataCount;
+    private int omittedOutOfScopeCount;
     private String warningPl;
     private String errorPl;
 
@@ -55,6 +57,26 @@ public class MealResponse {
 
     public void setOmittedMalformedCount(int omittedMalformedCount) {
         this.omittedMalformedCount = omittedMalformedCount;
+    }
+
+    public int getOmittedMissingDataCount() {
+        return omittedMissingDataCount;
+    }
+
+    public void setOmittedMissingDataCount(int omittedMissingDataCount) {
+        this.omittedMissingDataCount = omittedMissingDataCount;
+    }
+
+    public int getOmittedOutOfScopeCount() {
+        return omittedOutOfScopeCount;
+    }
+
+    public void setOmittedOutOfScopeCount(int omittedOutOfScopeCount) {
+        this.omittedOutOfScopeCount = omittedOutOfScopeCount;
+    }
+
+    public boolean hasOmittedBreakdown() {
+        return omittedMissingDataCount > 0 || omittedOutOfScopeCount > 0;
     }
 
     public String getWarningPl() {

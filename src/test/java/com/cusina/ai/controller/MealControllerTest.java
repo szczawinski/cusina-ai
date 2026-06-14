@@ -6,6 +6,7 @@ import com.cusina.ai.model.MealResponse;
 import com.cusina.ai.model.MealSuggestion;
 import com.cusina.ai.service.MealSuggestionService;
 import com.cusina.ai.session.IngredientSession;
+import com.cusina.ai.session.MealSelectionSession;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -16,14 +17,17 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
@@ -42,6 +46,9 @@ class MealControllerTest {
 
     @MockBean
     private MealSuggestionService mealSuggestionService;
+
+    @MockBean
+    private MealSelectionSession mealSelectionSession;
 
     @TestConfiguration
     static class TestConfig {
@@ -99,6 +106,7 @@ class MealControllerTest {
 
          when(ingredientSession.isEmpty()).thenReturn(false);
          when(ingredientSession.getIngredientNames()).thenReturn(List.of("Eggs"));
+         when(ingredientSession.getIngredientPromptDetails()).thenReturn(List.of("Eggs (2 szt)"));
          when(mealSuggestionService.suggest(any())).thenReturn(CompletableFuture.completedFuture(response));
 
          mockMvc.perform(post("/meal-request/suggest")
@@ -108,6 +116,8 @@ class MealControllerTest {
                  .andExpect(status().is3xxRedirection())
                  .andExpect(redirectedUrl("/results"))
                  .andExpect(flash().attributeExists("mealResponse"));
+
+         verify(mealSelectionSession).updateLatestSuggestions(any());
      }
 
      @Test
@@ -138,10 +148,77 @@ class MealControllerTest {
     }
 
     @Test
+    void shouldRenderWarningBreakdownOnResultsPage() throws Exception {
+        MealResponse response = new MealResponse();
+        response.setRawCount(3);
+        response.setMeals(List.of());
+        response.setWarningPl("Część sugestii pominięto, ponieważ miały niepełne dane lub wskazywały składniki spoza Twojej listy.");
+        response.setOmittedMissingDataCount(1);
+        response.setOmittedOutOfScopeCount(2);
+        response.setOmittedMalformedCount(3);
+
+        mockMvc.perform(get("/results").flashAttr("mealResponse", response))
+                .andExpect(status().isOk())
+                .andExpect(view().name("results"))
+                .andExpect(content().string(containsString("Niepełne dane przepisu")))
+                .andExpect(content().string(containsString("Składniki spoza Twojej listy")));
+    }
+
+    @Test
     void shouldGuardResultsWhenNoFlashResponseProvided() throws Exception {
+        when(mealSelectionSession.hasLatestSuggestions()).thenReturn(false);
+
         mockMvc.perform(get("/results"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/meal-request"));
+    }
+
+    @Test
+    void shouldSelectMealAndRedirectToDetailedRecipe() throws Exception {
+        MealSuggestion selected = new MealSuggestion();
+        selected.setName("Zupa pomidorowa");
+        when(mealSelectionSession.selectFromLatest(0)).thenReturn(Optional.of(selected));
+
+        mockMvc.perform(post("/results/select").param("index", "0"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/meal-selected"))
+                .andExpect(flash().attribute("successMessage", "Przepis został dodany do historii."));
+    }
+
+    @Test
+    void shouldRenderSelectedMealViewWhenSelectionExists() throws Exception {
+        MealSuggestion selected = new MealSuggestion();
+        selected.setName("Placuszki");
+        selected.setDescription("Opis");
+        selected.setSteps(List.of("Krok 1"));
+        when(mealSelectionSession.getSelectedMeal()).thenReturn(Optional.of(selected));
+
+        mockMvc.perform(get("/meal-selected"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("meal-selected"))
+                .andExpect(model().attributeExists("selectedMeal"));
+    }
+
+    @Test
+    void shouldGuardSelectedMealWhenNothingChosenYet() throws Exception {
+        when(mealSelectionSession.getSelectedMeal()).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/meal-selected"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/results"));
+    }
+
+    @Test
+    void shouldRenderMealHistoryWithSummary() throws Exception {
+        when(mealSelectionSession.getSelectedMealsHistory()).thenReturn(List.of(new MealSuggestion()));
+        when(mealSelectionSession.getSelectionCount()).thenReturn(1);
+        when(mealSelectionSession.getUniqueMealCount()).thenReturn(1);
+
+        mockMvc.perform(get("/meal-history"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("meal-history"))
+                .andExpect(model().attribute("selectionCount", 1))
+                .andExpect(model().attribute("uniqueMealCount", 1));
     }
 }
 

@@ -14,22 +14,35 @@
         </div>
     </div>
 
-    <div th:if="${mealResponse.hasWarning()}" class="warning" th:text="${mealResponse.warningPl}"></div>
+    <div th:if="${mealResponse.hasWarning()}" class="warning">
+        <p th:text="${mealResponse.warningPl}"></p>
+        <ul class="warning-breakdown" th:if="${mealResponse.hasOmittedBreakdown()}">
+            <li th:if="${mealResponse.omittedMissingDataCount > 0}">
+                Niepełne dane przepisu: <strong th:text="${mealResponse.omittedMissingDataCount}"></strong>
+            </li>
+            <li th:if="${mealResponse.omittedOutOfScopeCount > 0}">
+                Składniki spoza Twojej listy: <strong th:text="${mealResponse.omittedOutOfScopeCount}"></strong>
+            </li>
+        </ul>
+    </div>
 
     <div th:unless="${mealResponse.hasError()}" class="results-grid">
-        <article class="card meal-card" th:each="meal : ${mealResponse.meals}">
+        <article class="card meal-card" th:each="meal, iter : ${mealResponse.meals}">
             <h2 th:text="${meal.name}"></h2>
             <p th:text="${meal.description}"></p>
             <p class="meta" th:if="${meal.usedIngredients != null and !meal.usedIngredients.isEmpty()}">
                 Użyte składniki: <span th:text="${#strings.listJoin(meal.usedIngredients, ', ')}"></span>
             </p>
-            <ol>
-                <li th:each="step : ${meal.steps}" th:text="${step}"></li>
-            </ol>
+            <p class="meta" th:if="${meal.steps != null}">Liczba kroków: <span th:text="${meal.steps.size()}"></span></p>
+            <form th:action="@{/results/select}" method="post" class="select-form">
+                <input type="hidden" name="index" th:value="${iter.index}"/>
+                <button type="submit">Wybierz</button>
+            </form>
         </article>
     </div>
 
     <div class="actions-row">
+        <a class="cta-link" th:href="@{/meal-history}">Historia wybranych dań</a>
         <a class="cta-link" th:href="@{/ingredients}">Wróć do składników</a>
         <a class="cta-link" th:href="@{/meal-request}">Nowe zapytanie</a>
     </div>

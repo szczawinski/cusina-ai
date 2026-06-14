@@ -70,6 +70,9 @@ h2 { font-size: clamp(1.1rem, 3.8vw, 1.4rem); margin-top: 0; }
 .flash-success { background: var(--success-bg); }
 .flash-error { background: var(--danger-bg); color: var(--danger); }
 .warning { background: var(--warning-bg); }
+.warning p { margin: 0; }
+.warning-breakdown { margin: .5rem 0 0; padding-left: 1.2rem; color: #6a5a2a; }
+.warning-breakdown li { margin: .2rem 0; }
 
 label { display: block; margin-bottom: .4rem; font-weight: 600; }
 input, textarea, select {
@@ -118,6 +121,11 @@ button.secondary { background: #fff; color: var(--text); border: 1px solid #dada
 .results-grid { display: grid; gap: .9rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 .meal-card ol { padding-left: 1.1rem; }
 .actions-row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .5rem; }
+.select-form { margin-top: .8rem; }
+.select-form button { width: 100%; }
+.meal-detail-card h3 { margin: 1rem 0 .4rem; font-size: 1rem; }
+.meal-detail-card ul, .meal-detail-card ol { padding-left: 1.2rem; }
+.history-summary-card p { margin: .3rem 0; }
 
 /* --- Ingredient header z akcjami --- */
 .ingredient-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem; margin-bottom: .8rem; }

@@ -64,6 +64,8 @@ class MealSuggestionServiceTest {
         assertThat(response.getMeals()).hasSize(2);
         assertThat(response.getRawCount()).isEqualTo(3);
         assertThat(response.getOmittedMalformedCount()).isEqualTo(1);
+        assertThat(response.getOmittedMissingDataCount()).isEqualTo(1);
+        assertThat(response.getOmittedOutOfScopeCount()).isZero();
         assertThat(response.hasWarning()).isTrue();
         assertThat(response.getWarningPl()).contains("pominięto");
     }
@@ -156,6 +158,8 @@ class MealSuggestionServiceTest {
         assertThat(response.hasError()).isFalse();
         assertThat(response.getMeals()).hasSize(3);
         assertThat(response.getOmittedMalformedCount()).isZero();
+        assertThat(response.getOmittedMissingDataCount()).isZero();
+        assertThat(response.getOmittedOutOfScopeCount()).isZero();
     }
 
     @Test
@@ -173,6 +177,8 @@ class MealSuggestionServiceTest {
         assertThat(response.hasError()).isFalse();
         assertThat(response.getMeals()).hasSize(2);
         assertThat(response.getOmittedMalformedCount()).isEqualTo(1);
+        assertThat(response.getOmittedMissingDataCount()).isZero();
+        assertThat(response.getOmittedOutOfScopeCount()).isEqualTo(1);
     }
 
     @Test
@@ -190,6 +196,8 @@ class MealSuggestionServiceTest {
         assertThat(response.hasError()).isFalse();
         assertThat(response.getMeals()).hasSize(2);
         assertThat(response.getOmittedMalformedCount()).isEqualTo(1);
+        assertThat(response.getOmittedMissingDataCount()).isZero();
+        assertThat(response.getOmittedOutOfScopeCount()).isEqualTo(1);
         assertThat(response.hasWarning()).isTrue();
     }
 
