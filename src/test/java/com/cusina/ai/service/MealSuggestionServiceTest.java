@@ -176,6 +176,24 @@ class MealSuggestionServiceTest {
     }
 
     @Test
+    void shouldLogAndCountOutOfScopeIngredientsAsOmitted() throws Exception {
+        when(mealAiClient.requestMealSuggestionsJson(anyString(), anyString())).thenReturn("""
+                {"meals":[
+                  {"name":"A","description":"danie z pomidorem","steps":["Dodaj"],"usedIngredients":["pomidor"]},
+                  {"name":"B","description":"danie z mango","steps":["Smaż"],"usedIngredients":["mango"]},
+                  {"name":"C","description":"danie z serem","steps":["Podawaj"],"usedIngredients":["ser"]}
+                ]}
+                """);
+
+        MealResponse response = service.suggest(requestWithIngredients()).get();
+
+        assertThat(response.hasError()).isFalse();
+        assertThat(response.getMeals()).hasSize(2);
+        assertThat(response.getOmittedMalformedCount()).isEqualTo(1);
+        assertThat(response.hasWarning()).isTrue();
+    }
+
+    @Test
     void shouldIncludeDishTypeAndDietTypeInPrompt() throws Exception {
         MealRequest request = requestWithIngredients();
         request.setDishType(DishType.LUNCHE);

@@ -147,13 +147,15 @@ public class MealSuggestionService {
         List<MealSuggestion> validMeals = new ArrayList<>();
         int omitted = 0;
 
-        for (MealSuggestion meal : rawResponse.getMeals()) {
+        for (int index = 0; index < rawResponse.getMeals().size(); index++) {
+            MealSuggestion meal = rawResponse.getMeals().get(index);
             if (meal != null && meal.isValid() && meal.usesValidIngredientSubset(availableIngredients)) {
                 if (!isLikelyPolish(meal)) {
                     return MealResponse.error(LANGUAGE_ERROR);
                 }
                 validMeals.add(meal);
             } else {
+                logger.warn("Pominięto sugestię AI #{}: {}", index + 1, describeRejectionReason(meal, availableIngredients));
                 omitted++;
             }
         }
@@ -164,8 +166,22 @@ public class MealSuggestionService {
         response.setOmittedMalformedCount(omitted);
         if (omitted > 0) {
             response.setWarningPl("Część sugestii pominięto, ponieważ miały niepełne dane lub wskazywały składniki spoza Twojej listy.");
+            logger.info("Walidacja sugestii AI zakończona: {} poprawnych, {} pominiętych.", validMeals.size(), omitted);
         }
         return response;
+    }
+
+    private String describeRejectionReason(MealSuggestion meal, List<String> availableIngredients) {
+        if (meal == null) {
+            return "brak obiektu sugestii";
+        }
+        if (!meal.isValid()) {
+            return "brak wymaganych danych (name/description/steps)";
+        }
+        if (!meal.usesValidIngredientSubset(availableIngredients)) {
+            return "użyto składników spoza listy użytkownika lub nie udało się ich dopasować";
+        }
+        return "nieznany powód odrzucenia";
     }
 
     boolean isLikelyPolish(MealSuggestion suggestion) {
