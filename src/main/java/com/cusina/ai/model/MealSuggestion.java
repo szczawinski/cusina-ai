@@ -2,6 +2,7 @@ package com.cusina.ai.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.text.Normalizer;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -33,7 +34,7 @@ public class MealSuggestion {
             return false;
         }
         Set<String> allowed = new HashSet<>(availableIngredients.stream()
-                .map(value -> value == null ? "" : value.trim().toLowerCase(Locale.ROOT))
+                .map(MealSuggestion::normalizeIngredientToken)
                 .filter(value -> !value.isBlank())
                 .toList());
 
@@ -42,11 +43,35 @@ public class MealSuggestion {
         }
 
         List<String> normalizedUsed = usedIngredients.stream()
-                .filter(value -> value != null && !value.isBlank())
-                .map(value -> value.trim().toLowerCase(Locale.ROOT))
+                .map(MealSuggestion::normalizeIngredientToken)
+                .filter(value -> !value.isBlank())
                 .toList();
 
-        return !normalizedUsed.isEmpty() && normalizedUsed.stream().allMatch(allowed::contains);
+        return !normalizedUsed.isEmpty() && normalizedUsed.stream().allMatch(used -> matchesAnyAllowed(used, allowed));
+    }
+
+    private static boolean matchesAnyAllowed(String used, Set<String> allowed) {
+        if (allowed.contains(used)) {
+            return true;
+        }
+        // Toleruje drobne różnice formatu, np. "jajko (6 szt)" vs "jajko".
+        return allowed.stream().anyMatch(candidate ->
+                (used.length() >= 4 && candidate.contains(used))
+                        || (candidate.length() >= 4 && used.contains(candidate))
+        );
+    }
+
+    private static String normalizeIngredientToken(String value) {
+        if (value == null) {
+            return "";
+        }
+        String normalized = value.trim().toLowerCase(Locale.ROOT);
+        normalized = normalized.replaceAll("\\([^)]*\\)", " ");
+        normalized = normalized.replaceAll("[^\\p{L}\\p{Nd}\\s-]", " ");
+        normalized = normalized.replaceAll("\\s+", " ").trim();
+
+        // Ujednolicenie znaków (bez zmiany polskich liter na ASCII).
+        return Normalizer.normalize(normalized, Normalizer.Form.NFC);
     }
 
     public String getName() {

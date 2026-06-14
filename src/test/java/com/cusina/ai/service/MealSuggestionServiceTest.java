@@ -88,7 +88,6 @@ class MealSuggestionServiceTest {
                   {"name":"Danie B","description":"Aromatyczne danie z warzywami","steps":["Podsmaż i podawaj"],"usedIngredients":["pomidor"]},
                   {"name":"","description":"broken","steps":["Step 1"],"usedIngredients":["pomidor"]}
                 ]}
-                ```
                 """);
 
         MealResponse response = service.suggest(requestWithIngredients()).get();
@@ -140,6 +139,23 @@ class MealSuggestionServiceTest {
 
         assertThat(response.hasError()).isFalse();
         assertThat(response.getMeals()).hasSize(3);
+    }
+
+    @Test
+    void shouldAcceptUsedIngredientsWithQuantityDecorators() throws Exception {
+        when(mealAiClient.requestMealSuggestionsJson(anyString(), anyString())).thenReturn("""
+                {"meals":[
+                  {"name":"A","description":"danie z pomidorem","steps":["Dodaj"],"usedIngredients":["pomidor (2 szt)"]},
+                  {"name":"B","description":"danie z jajkiem","steps":["Smaż"],"usedIngredients":["jajko (6 szt)"]},
+                  {"name":"C","description":"danie z serem","steps":["Podawaj"],"usedIngredients":["ser (200 g)"]}
+                ]}
+                """);
+
+        MealResponse response = service.suggest(requestWithIngredients()).get();
+
+        assertThat(response.hasError()).isFalse();
+        assertThat(response.getMeals()).hasSize(3);
+        assertThat(response.getOmittedMalformedCount()).isZero();
     }
 
     @Test

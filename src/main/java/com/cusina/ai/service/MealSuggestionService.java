@@ -163,7 +163,7 @@ public class MealSuggestionService {
         response.setMeals(validMeals);
         response.setOmittedMalformedCount(omitted);
         if (omitted > 0) {
-            response.setWarningPl("Część sugestii pominięto, ponieważ miały niepełne dane.");
+            response.setWarningPl("Część sugestii pominięto, ponieważ miały niepełne dane lub wskazywały składniki spoza Twojej listy.");
         }
         return response;
     }
