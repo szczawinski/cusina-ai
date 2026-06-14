@@ -4,9 +4,14 @@
 <section>
     <h1>Proponowane dania</h1>
 
-    <div th:if="${mealResponse.hasError()}" class="flash-error">
-        <p th:text="${mealResponse.errorPl}"></p>
-        <a class="cta-link" th:href="@{/meal-request}">Spróbuj ponownie</a>
+    <div th:if="${mealResponse.hasError()}" class="error-card">
+        <div class="error-icon">⚠️</div>
+        <p class="error-title">Nie udało się wygenerować propozycji</p>
+        <p class="error-detail" th:text="${mealResponse.errorPl}"></p>
+        <div class="actions-row">
+            <a class="cta-link retry-link" th:href="@{/meal-request}">↺ Spróbuj ponownie</a>
+            <a class="cta-link" th:href="@{/ingredients}">Wróć do składników</a>
+        </div>
     </div>
 
     <div th:if="${mealResponse.hasWarning()}" class="warning" th:text="${mealResponse.warningPl}"></div>

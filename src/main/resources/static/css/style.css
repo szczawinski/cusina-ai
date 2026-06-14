@@ -118,6 +118,63 @@ button.secondary { background: #fff; color: var(--text); border: 1px solid #dada
 .results-grid { display: grid; gap: .9rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 .meal-card ol { padding-left: 1.1rem; }
 .actions-row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .5rem; }
+
+/* --- Ingredient header z akcjami --- */
+.ingredient-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem; margin-bottom: .8rem; }
+.header-actions { display: flex; gap: .4rem; }
+.btn-sm { padding: .35rem .75rem; font-size: .85rem; min-height: 34px; border-radius: 999px; }
+button.danger { background: var(--danger-bg); color: var(--danger); border: 1px solid #fecdc9; }
+button.danger:hover { background: #fde8e6; }
+.ingredient-info { flex: 1; min-width: 0; }
+.ingredient-actions { display: flex; gap: .4rem; align-items: center; flex-shrink: 0; }
+.source-badge { background: #f0f6ff; color: var(--accent); border-radius: 6px; padding: 1px 6px; margin-left: .3rem; }
+.qty-row { display: flex; gap: .5rem; }
+.qty-field { flex: 1; }
+.qty-field input, .qty-field select { margin-bottom: .6rem; }
+
+/* --- Loader AI --- */
+.loader-box {
+    display: flex; flex-direction: column; align-items: center;
+    gap: .9rem; padding: 2rem 1rem;
+}
+.spinner {
+    width: 44px; height: 44px;
+    border: 3px solid #e5e5ea;
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loader-text { font-weight: 600; font-size: 1.05rem; margin: 0; }
+.loader-sub { color: var(--muted); font-size: .9rem; margin: 0; }
+
+/* --- Modal edycji --- */
+.modal-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,.35); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 1rem;
+}
+.modal-card {
+    background: #fff; border-radius: var(--radius);
+    box-shadow: 0 24px 60px rgba(0,0,0,.18);
+    padding: 1.4rem; width: 100%; max-width: 420px;
+}
+.modal-card h2 { margin-top: 0; }
+.modal-actions { display: flex; gap: .6rem; justify-content: flex-end; margin-top: .4rem; }
+
+/* --- Error card (results) --- */
+.error-card {
+    background: var(--danger-bg); border: 1px solid #fecdc9;
+    border-radius: var(--radius); padding: 1.4rem;
+    text-align: center; margin-bottom: 1rem;
+}
+.error-icon { font-size: 2rem; margin-bottom: .4rem; }
+.error-title { font-weight: 700; font-size: 1.1rem; margin: 0 0 .4rem; color: var(--danger); }
+.error-detail { color: var(--danger); margin: 0 0 1rem; }
+.retry-link { background: var(--danger); color: #fff; }
+.retry-link:hover { opacity: .88; }
+
 .footer { text-align: center; color: var(--muted); padding: 1rem; font-size: .86rem; }
 
 @media (max-width: 430px) {
